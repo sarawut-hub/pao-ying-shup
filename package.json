@@ -8,7 +8,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "start": "node build/bin/server.js",
+    "start": "mkdir -p tmp && node build/bin/console.js migration:run --force && node build/bin/server.js",
     "build": "vite build && tsx bin/console.ts build --ignore-ts-errors",
     "dev": "tsx watch bin/server.ts",
     "test": "node ace test",

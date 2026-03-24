@@ -13,6 +13,7 @@
 
   @if(auth.user)
     <div class="split-layout" style="max-width: 800px; margin: 0 auto; text-align: left;">
+      @if(!auth.user.email.endsWith('@guest.local'))
       <div class="glass-panel">
         <h2 style="font-size: 24px; margin-bottom: 8px;">Create a Room</h2>
         <p>Start a new tournament and invite your friends to join.</p>
@@ -21,6 +22,7 @@
           <button type="submit" class="btn" style="width: 100%; margin-top: 20px; padding: 14px;">+ Create New Game</button>
         </form>
       </div>
+      @endif
 
       <div class="glass-panel" style="background: rgba(236, 72, 153, 0.05); border-color: rgba(236, 72, 153, 0.2);">
         <h2 style="font-size: 24px; margin-bottom: 8px;">Join a Room</h2>
@@ -35,12 +37,26 @@
       </div>
     </div>
   @else
-    <div class="glass-panel" style="max-width: 500px; margin: 0 auto;">
-      <h2 style="margin-bottom: 20px;">Ready to Play?</h2>
-      <p>Log in or create an account to start playing with your friends immediately.</p>
-      <div style="display: flex; gap: 16px; justify-content: center; margin-top: 30px;">
-        <a href="/login" class="btn btn-secondary">Login</a>
-        <a href="/signup" class="btn">Sign Up Free</a>
+    <div class="split-layout" style="max-width: 800px; margin: 0 auto; text-align: left;">
+      <div class="glass-panel">
+        <h2 style="font-size: 24px; margin-bottom: 8px;">Quick Join (Guest)</h2>
+        <p>Enter your Employee ID to join instantly without registering.</p>
+        <form action="{{ route('guest.login') }}" method="POST">
+          {{ csrfField() }}
+          <div class="form-group" style="margin-top: 20px;">
+            <input type="text" name="employeeId" placeholder="Employee ID" required style="font-size: 18px; text-align: center;">
+          </div>
+          <button type="submit" class="btn" style="width: 100%; padding: 14px; margin-top: 15px;">Join as Guest</button>
+        </form>
+      </div>
+      
+      <div class="glass-panel" style="background: rgba(139, 92, 246, 0.05); border-color: rgba(139, 92, 246, 0.2);">
+        <h2 style="font-size: 24px; margin-bottom: 8px;">Host a Game?</h2>
+        <p>Log in or create a full account to start hosting tournaments.</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+          <a href="/login" class="btn btn-secondary" style="text-align: center;">Login</a>
+          <a href="/signup" class="btn" style="text-align: center;">Sign Up Free</a>
+        </div>
       </div>
     </div>
   @endif

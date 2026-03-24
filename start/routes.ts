@@ -20,6 +20,8 @@ router
 
     router.get('login', [controllers.Session, 'create'])
     router.post('login', [controllers.Session, 'store'])
+    
+    router.post('guest-login', [controllers.Session, 'guestLogin']).as('guest.login')
   })
   .use(middleware.guest())
 
