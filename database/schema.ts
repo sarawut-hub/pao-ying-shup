@@ -69,8 +69,14 @@ export class RoomSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
+  static $columns = ['avatarOptions', 'avatarSeed', 'avatarStyle', 'createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
   $columns = UserSchema.$columns
+  @column()
+  declare avatarOptions: string | null
+  @column()
+  declare avatarSeed: string | null
+  @column()
+  declare avatarStyle: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()

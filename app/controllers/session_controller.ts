@@ -1,6 +1,7 @@
 import User from '#models/user'
 import type { HttpContext } from '@adonisjs/core/http'
 import { randomBytes } from 'crypto'
+import { loginValidator } from '#validators/user'
 
 /**
  * SessionController handles user authentication and session management.
@@ -19,7 +20,7 @@ export default class SessionController {
    * Authenticate user credentials and create a new session
    */
   async store({ request, auth, response }: HttpContext) {
-    const { email, password } = request.all()
+    const { email, password } = await request.validateUsing(loginValidator)
     const user = await User.verifyCredentials(email, password)
 
     await auth.use('web').login(user)
@@ -46,7 +47,9 @@ export default class SessionController {
       user = await User.create({
         fullName: `Employee ${employeeId}`,
         email: `${employeeId}@guest.local`,
-        password: randomBytes(16).toString('hex')
+        password: randomBytes(16).toString('hex'),
+        avatarStyle: 'adventurer',
+        avatarSeed: employeeId
       })
     }
     await auth.use('web').login(user)

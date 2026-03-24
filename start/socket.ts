@@ -20,7 +20,8 @@ app.ready(() => {
           io.to(data.roomCode).emit('player_joined', players.map(p => ({ 
              score: p.score, 
              userId: p.userId,
-             name: p.user?.fullName || `User #${p.userId}`
+             name: p.user?.fullName || `User #${p.userId}`,
+             avatar: `https://api.dicebear.com/7.x/${p.user?.avatarStyle || 'fun-emoji'}/svg?seed=${p.user?.avatarSeed || p.user?.id}`
           })))
         }
       } catch (e) {
@@ -125,7 +126,12 @@ app.ready(() => {
     if (unfinished.length === 0) {
       if (matches.length > 0) {
         const top5Raw = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc').limit(5).preload('user')
-        const leaderboard = top5Raw.map(p => ({ score: p.score, userId: p.userId, name: p.user?.fullName || `User #${p.userId}` }))
+        const leaderboard = top5Raw.map(p => ({ 
+          score: p.score, 
+          userId: p.userId, 
+          name: p.user?.fullName || `User #${p.userId}`,
+          avatar: `https://api.dicebear.com/7.x/${p.user?.avatarStyle || 'fun-emoji'}/svg?seed=${p.user?.avatarSeed || p.user?.id}`
+        }))
         io.to(room.code).emit('round_finished', { round: room.currentRound, leaderboard })
       }
 

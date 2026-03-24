@@ -1,4 +1,4 @@
-@layout({ title: 'RPS Royale - Leaderboard ' + room.code })
+@layout({ title: 'RPS Royale - Match Results' })
 
 <div style="max-width: 800px; margin: 0 auto; padding-top: 60px;">
   <div style="text-align: center; margin-bottom: 40px;">
@@ -16,11 +16,14 @@
           <div class="rank-badge rank-{{ index + 1 }}" style="width: 40px; height: 40px; font-size: 18px;">
             #{{ index + 1 }}
           </div>
-          <div>
-            <h3 style="margin: 0; font-size: 20px;">{{ player.user?.fullName || `User #${player.userId}` }}</h3>
-            @if(player.userId === auth.user?.id)
-              <span class="status-badge" style="background: rgba(139,92,246,0.2); color: var(--primary); margin-top: 5px; display: inline-block;">You</span>
-            @endif
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="https://api.dicebear.com/7.x/{{ player.user?.avatarStyle || 'fun-emoji' }}/svg?seed={{ player.user?.avatarSeed || player.userId }}" style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid var(--primary);">
+            <div>
+              <h3 style="margin: 0; font-size: 20px;">{{ player.user?.fullName || `User #${player.userId}` }}</h3>
+              @if(player.userId === auth.user?.id)
+                <span class="status-badge" style="background: rgba(139,92,246,0.2); color: var(--primary); margin-top: 5px; display: inline-block;">You</span>
+              @endif
+            </div>
           </div>
         </div>
         

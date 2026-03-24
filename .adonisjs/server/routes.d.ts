@@ -11,6 +11,8 @@ export type ScannedRoutes = {
     'session.store': { paramsTuple?: []; params?: {} }
     'guest.login': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
+    'profile.show': { paramsTuple?: []; params?: {} }
+    'profile.update': { paramsTuple?: []; params?: {} }
     'rooms.create': { paramsTuple?: []; params?: {} }
     'rooms.join': { paramsTuple?: []; params?: {} }
     'rooms.show': { paramsTuple: [ParamValue]; params: {'code': ParamValue} }
@@ -21,6 +23,7 @@ export type ScannedRoutes = {
     'home': { paramsTuple?: []; params?: {} }
     'new_account.create': { paramsTuple?: []; params?: {} }
     'session.create': { paramsTuple?: []; params?: {} }
+    'profile.show': { paramsTuple?: []; params?: {} }
     'rooms.show': { paramsTuple: [ParamValue]; params: {'code': ParamValue} }
     'reports.index': { paramsTuple?: []; params?: {} }
     'reports.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -29,6 +32,7 @@ export type ScannedRoutes = {
     'home': { paramsTuple?: []; params?: {} }
     'new_account.create': { paramsTuple?: []; params?: {} }
     'session.create': { paramsTuple?: []; params?: {} }
+    'profile.show': { paramsTuple?: []; params?: {} }
     'rooms.show': { paramsTuple: [ParamValue]; params: {'code': ParamValue} }
     'reports.index': { paramsTuple?: []; params?: {} }
     'reports.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -38,6 +42,7 @@ export type ScannedRoutes = {
     'session.store': { paramsTuple?: []; params?: {} }
     'guest.login': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
+    'profile.update': { paramsTuple?: []; params?: {} }
     'rooms.create': { paramsTuple?: []; params?: {} }
     'rooms.join': { paramsTuple?: []; params?: {} }
   }

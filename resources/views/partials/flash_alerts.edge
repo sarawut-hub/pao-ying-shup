@@ -1,12 +1,40 @@
 <div class="flash-container">
-  @if(flashMessages.has('error'))
-    @alert.root({ variant: 'destructive', autoDismiss: true })
-      @!alert.description({ text: flashMessages.get('error') })
-    @end
-  @end
   @if(flashMessages.has('success'))
-    @alert.root({ variant: 'success', autoDismiss: true })
-      @!alert.description({ text: flashMessages.get('success') })
-    @end
-  @end
+  <script>
+    Swal.fire({
+      icon: 'success',
+      title: 'Success!',
+      text: "{{ flashMessages.get('success') }}",
+      background: '#1e293b',
+      color: '#fff',
+      confirmButtonColor: '#8b5cf6'
+    })
+  </script>
+@endif
+
+@if(flashMessages.has('error'))
+  <script>
+    Swal.fire({
+      icon: 'error',
+      title: 'Oops...',
+      text: "{{ flashMessages.get('error') }}",
+      background: '#1e293b',
+      color: '#fff',
+      confirmButtonColor: '#ef4444'
+    })
+  </script>
+@endif
+
+@if(flashMessages.has('auth.errors.invalid'))
+  <script>
+    Swal.fire({
+      icon: 'warning',
+      title: 'Unauthorized',
+      text: 'Invalid email or password. Please try again.',
+      background: '#1e293b',
+      color: '#fff',
+      confirmButtonColor: '#f59e0b'
+    })
+  </script>
+@endif
 </div>

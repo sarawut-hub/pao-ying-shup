@@ -1,4 +1,4 @@
-@layout()
+@layout({ title: 'RPS Royale - Sign In' })
   <div class="form-container">
     <div>
       <h1> Login </h1>
@@ -8,27 +8,35 @@
     </div>
 
     <div>
-      @form({ route: 'session.store', method: 'POST' })
-        <div>
-          @field.root({ name: 'email' })
-            @!field.label({ text: 'Email' })
-            @!input.control({ type: 'email' })
-            @!field.error()
+      <form action="{{ route('session.store') }}" method="POST">
+        {{ csrfField() }}
+        <div class="form-group" style="margin-bottom: 25px;">
+          <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; letter-spacing: 0.5px;">EMAIL ADDRESS</label>
+          <input type="email" name="email" value="{{ old('email') || '' }}" placeholder="name@company.com" required style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; outline: none; transition: border-color 0.2s;">
+          @inputError('email')
+            <p style="color: #ef4444; font-size: 12px; margin-top: 5px;">{{ $messages.join(', ') }}</p>
           @end
         </div>
 
-        <div>
-          @field.root({ name: 'password' })
-            @!field.label({ text: 'Password' })
-            @!input.control({ type: 'password' })
-            @!field.error()
+        <div class="form-group" style="margin-bottom: 35px;">
+          <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; letter-spacing: 0.5px;">PASSWORD</label>
+          <input type="password" name="password" placeholder="••••••••" required style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; outline: none; transition: border-color 0.2s;">
+          @inputError('password')
+            <p style="color: #ef4444; font-size: 12px; margin-top: 5px;">{{ $messages.join(', ') }}</p>
           @end
         </div>
 
-        <div>
-          @!button({ text: 'Login', type: 'submit' })
-        </div>
-      @end
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px; font-weight: 700; font-size: 16px; letter-spacing: 1px; text-transform: uppercase; background: linear-gradient(135deg, var(--primary), #7c3aed); border: none; box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.5); transform: translateY(0); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 15px 25px -5px rgba(139, 92, 246, 0.6)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 20px -5px rgba(139, 92, 246, 0.5)';">
+          Sign In Now &nbsp; ➔
+        </button>
+      </form>
+      
+      <div style="text-align: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
+        <p style="color: var(--text-muted); font-size: 14px;">
+          Don't have an account? <a href="/signup" style="color: var(--primary); text-decoration: none; font-weight: 600;">Create one for free</a>
+        </p>
+      </div>
     </div>
   </div>
+</div>
 @end

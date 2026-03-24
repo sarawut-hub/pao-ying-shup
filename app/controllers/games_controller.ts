@@ -71,7 +71,7 @@ export default class GamesController {
     const isHost = room.hostId === user.id
     
     // get leaderboard for current room
-    const players = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc')
+    const players = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc').preload('user')
     
     return view.render('pages/room', { room, isHost, players })
   }
@@ -84,7 +84,7 @@ export default class GamesController {
 
   public async roomReport({ params, view }: HttpContext) {
     const room = await Room.findOrFail(params.id)
-    const players = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc')
+    const players = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc').preload('user')
     return view.render('pages/room_report', { room, players })
   }
 }

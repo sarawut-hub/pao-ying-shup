@@ -26,11 +26,16 @@ router
   .use(middleware.guest())
 
 const GamesController = () => import('#controllers/games_controller')
+const ProfilesController = () => import('#controllers/profiles_controller')
 
 router
   .group(() => {
     router.post('logout', [controllers.Session, 'destroy'])
     
+    // Profile
+    router.get('profile', [ProfilesController, 'show']).as('profile.show')
+    router.post('profile', [ProfilesController, 'update']).as('profile.update')
+
     // Game Routes
     router.post('rooms/create', [GamesController, 'createRoom']).as('rooms.create')
     router.post('rooms/join', [GamesController, 'joinRoom']).as('rooms.join')

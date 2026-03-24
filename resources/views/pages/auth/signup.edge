@@ -1,50 +1,54 @@
-@layout()
-  <div class="form-container">
-    <div>
-      <h1> Signup </h1>
-      <p>
-        Enter your details below to create your account
+@layout({ title: 'RPS Royale - Join the Arena' })
+
+<div style="max-width: 500px; margin: 0 auto; padding-top: 60px;">
+  <div style="text-align: center; margin-bottom: 40px;">
+    <h1 style="font-size: 48px; margin-bottom: 10px; background: linear-gradient(135deg, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Create Account</h1>
+    <p style="color: var(--text-muted); font-size: 18px;">Join the ultimate rock-paper-scissors arena.</p>
+  </div>
+
+  <div class="glass-panel" style="padding: 40px; border: 1px solid rgba(255,255,255,0.1);">
+    <form action="{{ route('new_account.store') }}" method="POST">
+      {{ csrfField() }}
+      
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; letter-spacing: 0.5px;">FULL NAME</label>
+        <input type="text" name="fullName" value="{{ old('fullName') || '' }}" placeholder="John Doe" required style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; outline: none; transition: all 0.2s;">
+        @inputError('fullName')
+          <p style="color: #ef4444; font-size: 12px; margin-top: 5px;">{{ $messages.join(', ') }}</p>
+        @end
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; letter-spacing: 0.5px;">EMAIL ADDRESS</label>
+        <input type="email" name="email" value="{{ old('email') || '' }}" placeholder="john@company.com" required style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; outline: none; transition: all 0.2s;">
+        @inputError('email')
+          <p style="color: #ef4444; font-size: 12px; margin-top: 5px;">{{ $messages.join(', ') }}</p>
+        @end
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; letter-spacing: 0.5px;">PASSWORD</label>
+        <input type="password" name="password" placeholder="••••••••" required style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; outline: none; transition: all 0.2s;">
+        @inputError('password')
+          <p style="color: #ef4444; font-size: 12px; margin-top: 5px;">{{ $messages.join(', ') }}</p>
+        @end
+      </div>
+
+      <div class="form-group" style="margin-bottom: 30px;">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; letter-spacing: 0.5px;">CONFIRM PASSWORD</label>
+        <input type="password" name="passwordConfirmation" placeholder="••••••••" required style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; outline: none;">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px; font-weight: 700; font-size: 16px; letter-spacing: 1px; text-transform: uppercase; background: linear-gradient(135deg, var(--secondary), #3b82f6); border: none; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4); transform: translateY(0); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
+        Create My Account &nbsp; ✨
+      </button>
+    </form>
+    
+    <div style="text-align: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
+      <p style="color: var(--text-muted); font-size: 14px;">
+        Already have an account? <a href="/login" style="color: var(--secondary); text-decoration: none; font-weight: 600;">Sign in here</a>
       </p>
     </div>
-
-    <div>
-      @form({ route: 'new_account.store', method: 'POST' })
-        <div>
-          @field.root({ name: 'fullName' })
-            @!field.label({ text: 'Full name' })
-            @!input.control()
-            @!field.error()
-          @end
-        </div>
-
-        <div>
-          @field.root({ name: 'email' })
-            @!field.label({ text: 'Email' })
-            @!input.control({ type: 'email', autocomplete: 'email' })
-            @!field.error()
-          @end
-        </div>
-
-        <div>
-          @field.root({ name: 'password' })
-            @!field.label({ text: 'Password' })
-            @!input.control({ type: 'password', autocomplete: 'new-password' })
-            @!field.error()
-          @end
-        </div>
-
-        <div>
-          @field.root({ name: 'passwordConfirmation' })
-            @!field.label({ text: 'Confirm password' })
-            @!input.control({ type: 'password', autocomplete: 'new-password' })
-            @!field.error()
-          @end
-        </div>
-
-        <div>
-          @!button({ text: 'Sign up', type: 'submit' })
-        </div>
-      @end
-    </div>
   </div>
+</div>
 @end

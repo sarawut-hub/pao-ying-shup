@@ -1,0 +1,92 @@
+@layout({ title: 'RPS Royale - Customize Your Hero' })
+
+<div style="max-width: 600px; margin: 0 auto; padding-top: 60px;">
+  <div style="text-align: center; margin-bottom: 40px;">
+    <h1 style="font-size: 48px; margin-bottom: 10px;">Customize Avatar</h1>
+    <p style="color: var(--text-muted);">Express yourself with a unique character.</p>
+  </div>
+
+  @if(flashMessages.has('success'))
+  <div class="glass-panel"
+    style="background: rgba(34, 197, 94, 0.1); border-color: var(--success); color: var(--success); margin-bottom: 20px; padding: 15px; text-align: center;">
+    {{ flashMessages.get('success') }}
+  </div>
+  @endif
+
+  <div class="glass-panel" style="padding: 40px;">
+    <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 40px;">
+      <div id="avatar-preview-container" class="rank-badge"
+        style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; border: 4px solid var(--primary); padding: 0; background: rgba(255,255,255,0.1);">
+        <img id="avatar-preview"
+          src="https://api.dicebear.com/7.x/{{ user.avatarStyle || 'fun-emoji' }}/svg?seed={{ user.avatarSeed || user.id }}"
+          alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+      </div>
+      <p style="margin-top: 15px; font-size: 14px; color: var(--text-muted);">Live Preview</p>
+    </div>
+
+    <form action="{{ route('profile.update') }}" method="POST">
+      {{ csrfField() }}
+
+      <div class="form-group" style="margin-bottom: 25px;">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Display Name</label>
+        <input type="text" name="fullName" value="{{ user.fullName || '' }}" required>
+        @inputError('fullName')
+        <p style="color: #ef4444; font-size: 12px; margin-top: 5px;">{{ $messages.join(', ') }}</p>
+        @end
+      </div>
+
+      <div class="form-group" style="margin-bottom: 25px;">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Avatar Style</label>
+        <select name="avatarStyle" id="style-select"
+          style="width: 100%; padding: 12px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; cursor: pointer;">
+          <option value="adventurer" style="background: #1e293b;" {{ user.avatarStyle==='adventurer' ? 'selected' : ''
+            }}>Adventurer (Serious Character)</option>
+          <option value="personas" style="background: #1e293b;" {{ user.avatarStyle==='personas' ? 'selected' : '' }}>
+            Personas (Clean & Real)</option>
+          <option value="open-peeps" style="background: #1e293b;" {{ user.avatarStyle==='open-peeps' ? 'selected' : ''
+            }}>Open Peeps (Hand-drawn Realism)</option>
+          <option value="notionists" style="background: #1e293b;" {{ user.avatarStyle==='notionists' ? 'selected' : ''
+            }}>Notionists (Modern Pro)</option>
+          <option value="avataaars" style="background: #1e293b;" {{ user.avatarStyle==='avataaars' ? 'selected' : '' }}>
+            Avataaars (Human-like)</option>
+          <option value="fun-emoji" style="background: #1e293b;" {{ user.avatarStyle==='fun-emoji' ? 'selected' : '' }}>
+            Fun Emoji (Casual)</option>
+          <option value="bottts" style="background: #1e293b;" {{ user.avatarStyle==='bottts' ? 'selected' : '' }}>Robots
+            (Classic)</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 35px;">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Avatar Seed (Type anything to
+          change look)</label>
+        <input type="text" name="avatarSeed" id="seed-input" value="{{ user.avatarSeed || '' }}"
+          placeholder="Try your name or lucky number">
+        @inputError('avatarSeed')
+        <p style="color: #ef4444; font-size: 12px; margin-top: 5px;">{{ $messages.join(', ') }}</p>
+        @end
+      </div>
+
+      <button type="submit" class="btn" style="width: 100%; padding: 16px;">Save Changes</button>
+    </form>
+  </div>
+
+  <div style="text-align: center; margin-top: 30px;">
+    <a href="{{ route('home') }}" class="btn btn-secondary">Back to Lobby</a>
+  </div>
+</div>
+
+<script>
+  const styleSelect = document.getElementById('style-select');
+  const seedInput = document.getElementById('seed-input');
+  const previewImg = document.getElementById('avatar-preview');
+
+  function updatePreview() {
+    const style = styleSelect.value;
+    const seed = seedInput.value || '{{ user.id }}';
+    previewImg.src = `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
+  }
+
+  styleSelect.addEventListener('change', updatePreview);
+  seedInput.addEventListener('input', updatePreview);
+</script>
+@end
