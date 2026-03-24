@@ -1,7 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Room from '#models/room'
 import RoomPlayer from '#models/room_player'
-import Match from '#models/match'
 import { randomBytes } from 'crypto'
 
 export default class GamesController {

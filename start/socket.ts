@@ -83,7 +83,7 @@ app.ready(() => {
       if (match.p1Choice && match.p2Choice) {
         const p1 = match.p1Choice
         const p2 = match.p2Choice
-        let winnerId = null
+        let winnerId: number | null = null
         if (p1 !== p2) {
           if ((p1 === 'rock' && p2 === 'scissors') || (p1 === 'paper' && p2 === 'rock') || (p1 === 'scissors' && p2 === 'paper')) {
             winnerId = match.player1Id
@@ -96,7 +96,7 @@ app.ready(() => {
         match.winnerId = winnerId
         await match.save()
 
-        if (winnerId > 0) {
+        if (winnerId !== null && winnerId > 0) {
           const rp = await RoomPlayer.query().where('roomId', match.roomId).where('userId', winnerId).first()
           if (rp) {
             rp.score += 1
