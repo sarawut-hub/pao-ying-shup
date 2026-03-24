@@ -7,4 +7,10 @@ export default class Match extends MatchSchema {
 
 	@column({ columnName: 'player2_id' })
 	declare player2Id: number | null
+
+	@column({ columnName: 'p1_choice' })
+	declare p1Choice: string | null
+
+	@column({ columnName: 'p2_choice' })
+	declare p2Choice: string | null
 }
