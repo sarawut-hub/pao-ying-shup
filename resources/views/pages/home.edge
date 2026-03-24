@@ -1,0 +1,48 @@
+@layout({ title: 'RPS Royale - Multiplayer Rock Paper Scissors' })
+
+<div class="hero" style="max-width: 1000px; margin: 0 auto; text-align: center; padding-top: 80px;">
+  <h1 style="font-size: 64px; margin-bottom: 24px;">
+    The Ultimate <br>
+    <span style="background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+      Rock Paper Scissors
+    </span>
+  </h1>
+  <p style="font-size: 20px; max-width: 600px; margin: 0 auto 40px;">
+    Challenge your friends in real-time round-robin tournaments. Beautiful design, instant gameplay, and detailed leaderboards.
+  </p>
+
+  @if(auth.user)
+    <div class="split-layout" style="max-width: 800px; margin: 0 auto; text-align: left;">
+      <div class="glass-panel">
+        <h2 style="font-size: 24px; margin-bottom: 8px;">Create a Room</h2>
+        <p>Start a new tournament and invite your friends to join.</p>
+        <form action="{{ route('rooms.create') }}" method="POST">
+          {{ csrfField() }}
+          <button type="submit" class="btn" style="width: 100%; margin-top: 20px; padding: 14px;">+ Create New Game</button>
+        </form>
+      </div>
+
+      <div class="glass-panel" style="background: rgba(236, 72, 153, 0.05); border-color: rgba(236, 72, 153, 0.2);">
+        <h2 style="font-size: 24px; margin-bottom: 8px;">Join a Room</h2>
+        <p>Enter a room code to jump straight into the action.</p>
+        <form action="{{ route('rooms.join') }}" method="POST">
+          {{ csrfField() }}
+          <div class="form-group" style="margin-top: 20px;">
+            <input type="text" name="code" placeholder="e.g. A1B2C3" required style="font-size: 20px; text-align: center; letter-spacing: 4px; text-transform: uppercase;">
+          </div>
+          <button type="submit" class="btn btn-secondary" style="width: 100%; padding: 14px; border-color: var(--secondary); color: white;">Join Game</button>
+        </form>
+      </div>
+    </div>
+  @else
+    <div class="glass-panel" style="max-width: 500px; margin: 0 auto;">
+      <h2 style="margin-bottom: 20px;">Ready to Play?</h2>
+      <p>Log in or create an account to start playing with your friends immediately.</p>
+      <div style="display: flex; gap: 16px; justify-content: center; margin-top: 30px;">
+        <a href="/login" class="btn btn-secondary">Login</a>
+        <a href="/signup" class="btn">Sign Up Free</a>
+      </div>
+    </div>
+  @endif
+</div>
+@end

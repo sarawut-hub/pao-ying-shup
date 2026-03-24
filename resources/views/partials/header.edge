@@ -1,0 +1,19 @@
+<header>
+  <div>
+    <a href="{{ route('home') }}" class="logo">✊ RPS Royale</a>
+    <nav>
+      <a href="{{ route('home') }}">Home</a>
+      <a href="{{ route('reports.index') }}">Leaderboards</a>
+      @if(auth.user)
+        <span style="color: var(--text-muted); opacity: 0.5;">|</span>
+        <a href="#">{{ auth.user.fullName || auth.user.email }}</a>
+        <form action="/logout" method="POST" style="display: inline;">
+          <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; font-family: inherit; font-size: 16px;">Logout</button>
+        </form>
+      @else
+        <a href="/login" class="btn btn-secondary" style="padding: 6px 16px;">Login</a>
+        <a href="/signup" class="btn" style="padding: 6px 16px;">Sign Up</a>
+      @endif
+    </nav>
+  </div>
+</header>

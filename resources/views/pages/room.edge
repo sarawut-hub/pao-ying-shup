@@ -1,0 +1,241 @@
+@layout({ title: 'RPS Royale - Room ' + room.code })
+<script src="/socket.io/socket.io.js"></script>
+
+<div style="max-width: 1000px; margin: 0 auto; padding-top: 40px;">
+
+  <div class="glass-panel" style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1 style="margin: 0;">Room Code: <span style="color: var(--primary); letter-spacing: 2px;">{{ room.code }}</span></h1>
+      <p style="margin: 5px 0 0; color: var(--text-muted); font-size: 14px;">Status: <span class="status-badge status-{{ room.status }}">{{ room.status }}</span></p>
+    </div>
+    
+    @if(isHost && room.status === 'waiting')
+      <button id="startGameBtn" class="btn">🚀 Start Game</button>
+    @end
+  </div>
+
+  <div class="split-layout">
+    <!-- Game Arena -->
+    <div id="gameArena" class="glass-panel" style="grid-column: 1 / 2; position: relative; min-height: 450px;">
+      <div id="waitingState" style="{{ room.status === 'waiting' ? '' : 'display: none;' }}">
+        <h2 style="text-align: center; margin-top: 100px;">Waiting for host to start...</h2>
+        <div style="display: flex; justify-content: center; margin-top: 40px;">
+          <div style="width: 50px; height: 50px; border: 4px solid var(--glass-border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        </div>
+      </div>
+
+      <div id="playingState" style="display: none;">
+        <h2 style="text-align: center;">Round <span id="roundNumberDisplay">{{ room.currentRound || 1 }}</span></h2>
+        
+        <div id="myMatchContainer" style="display: none;">
+          <div class="match-arena">
+            <div class="player-box">
+              <div class="avatar-large" style="border-color: var(--primary)">Me</div>
+              <h3 style="margin: 0;">You</h3>
+              <div class="action-status" id="myStatus">Make your choice!</div>
+            </div>
+            
+            <div class="vs-badge">VS</div>
+            
+            <div class="player-box">
+              <div class="avatar-large" style="border-color: var(--secondary)">Opp</div>
+              <h3 style="margin: 0;" id="opponentName">Opponent</h3>
+              <div class="action-status" id="opponentStatus">Thinking...</div>
+            </div>
+          </div>
+          
+          <div class="rps-choices" id="choicesContainer">
+            <div class="rps-card" onclick="submitChoice('rock')">
+              <div class="rps-icon">🪨</div>
+              <div class="rps-label">Rock</div>
+            </div>
+            <div class="rps-card" onclick="submitChoice('paper')">
+              <div class="rps-icon">📄</div>
+              <div class="rps-label">Paper</div>
+            </div>
+            <div class="rps-card" onclick="submitChoice('scissors')">
+              <div class="rps-icon">✂️</div>
+              <div class="rps-label">Scissors</div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="spectatingContainer" style="display: none; text-align: center; margin-top: 100px;">
+          <h2>No match for you this round!</h2>
+          <p>Please wait for the others to finish.</p>
+        </div>
+      </div>
+      
+      <div id="finishedState" style="{{ room.status === 'finished' ? '' : 'display: none;' }} text-align: center;">
+        <h2 style="font-size: 36px; margin-top: 60px; color: var(--success);">Game Over!</h2>
+        <p style="font-size: 20px;">Check out the final leaderboard to see who won.</p>
+        <a href="{{ route('reports.show', { id: room.id }) }}" class="btn" style="margin-top: 30px;">View Full Report</a>
+      </div>
+
+      <!-- Round Winner Overlay -->
+      <div id="roundResultOverlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border-radius: 24px; z-index: 10; display: none; flex-direction: column; align-items: center; justify-content: center;">
+        <h2 style="font-size: 40px; margin-bottom: 20px; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Round Finished!</h2>
+        <div id="roundLeaderboard" style="width: 80%; max-width: 400px; text-align: left;">
+          <!-- Injected via JS -->
+        </div>
+        <p style="margin-top: 30px; color: var(--text-muted);">Next round starting soon...</p>
+      </div>
+
+    </div>
+
+    <!-- Players Sidebar -->
+    <div class="glass-panel" style="grid-column: 2 / 3; padding: 30px;">
+      <h2 style="font-size: 22px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
+        Players & Leaderboard
+      </h2>
+      <div id="playersList">
+        @each(player in players)
+          <div class="leaderboard-item">
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <div class="rank-badge" style="background: var(--glass-border);">{{ player.score }}</div>
+              <div style="font-weight: 500;">{{ player.user?.fullName || `User #${player.userId}` }}</div>
+            </div>
+            @if(player.userId === auth.user.id)
+              <span class="status-badge" style="background: rgba(139,92,246,0.2); color: var(--primary);">You</span>
+            @endif
+          </div>
+        @end
+      </div>
+      <div style="margin-top: 20px; text-align: center;">
+        <a href="{{ route('reports.show', { id: room.id }) }}" style="color: var(--primary); font-size: 14px; text-decoration: underline;">View Full Leaderboard</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+@keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+
+<script>
+  const socket = io();
+  const roomCode = '{{ room.code }}';
+  const myUserId = {{ auth.user.id }};
+  let currentMatchId = null;
+  let hasChosen = false;
+
+  socket.emit('join_room', { roomCode });
+
+  let globalPlayersList = [];
+
+  socket.on('player_joined', (players) => {
+    if (Array.isArray(players)) globalPlayersList = players;
+    if ('{{ room.status }}' === 'waiting' && Array.isArray(players)) {
+      let html = '';
+      players.forEach(p => {
+         html += '<div class="leaderboard-item">' +
+                 '<div style="display: flex; align-items: center; gap: 15px;">' +
+                 '<div class="rank-badge" style="background: var(--glass-border);">' + p.score + '</div>' +
+                 '<div style="font-weight: 500;">' + p.name + '</div>' +
+                 '</div>' +
+                 (p.userId === myUserId ? '<span class="status-badge" style="background: rgba(139,92,246,0.2); color: var(--primary);">You</span>' : '') +
+                 '</div>';
+      });
+      const list = document.getElementById('playersList');
+      if (list) list.innerHTML = html;
+    }
+  });
+
+  document.getElementById('startGameBtn')?.addEventListener('click', () => {
+    socket.emit('start_game', { roomCode });
+  });
+
+  socket.on('game_started', () => {
+    document.getElementById('waitingState').style.display = 'none';
+    document.getElementById('startGameBtn').style.display = 'none';
+    document.querySelector('.status-waiting').textContent = 'playing';
+    document.querySelector('.status-waiting').className = 'status-badge status-playing';
+  });
+
+  socket.on('new_round', (data) => {
+    document.getElementById('roundResultOverlay').style.display = 'none';
+    hasChosen = false;
+    document.querySelectorAll('.rps-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('myStatus').textContent = 'Make your choice!';
+    document.getElementById('opponentStatus').textContent = 'Thinking...';
+    setupRound(data);
+  });
+  
+  socket.on('matches_state', (data) => {
+    setupRound(data);
+  });
+
+  function setupRound(data) {
+    document.getElementById('waitingState').style.display = 'none';
+    document.getElementById('finishedState').style.display = 'none';
+    document.getElementById('playingState').style.display = 'block';
+    document.getElementById('roundNumberDisplay').textContent = data.round;
+
+    const myMatch = data.matches.find(m => m.player1Id === myUserId || m.player2Id === myUserId);
+    if (myMatch) {
+      currentMatchId = myMatch.id;
+      document.getElementById('myMatchContainer').style.display = 'block';
+      document.getElementById('spectatingContainer').style.display = 'none';
+      
+      const oppId = myMatch.player1Id === myUserId ? myMatch.player2Id : myMatch.player1Id;
+      const oppContext = globalPlayersList.find(p => p.userId === oppId);
+      document.getElementById('opponentName').textContent = oppContext ? oppContext.name : ('User #' + oppId);
+      
+      const myChoice = myMatch.player1Id === myUserId ? myMatch.p1Choice : myMatch.p2Choice;
+      const oppChoice = myMatch.player1Id === myUserId ? myMatch.p2Choice : myMatch.p1Choice;
+
+      if (myChoice) {
+        hasChosen = true;
+        document.getElementById('myStatus').textContent = 'Choice submitted: ' + myChoice;
+      }
+      if (oppChoice) {
+        document.getElementById('opponentStatus').textContent = 'Ready!';
+      } else {
+        document.getElementById('opponentStatus').textContent = 'Thinking...';
+      }
+
+    } else {
+      document.getElementById('myMatchContainer').style.display = 'none';
+      document.getElementById('spectatingContainer').style.display = 'block';
+    }
+  }
+
+  socket.on('round_finished', (data) => {
+    const overlay = document.getElementById('roundResultOverlay');
+    overlay.style.display = 'flex';
+    
+    let html = '';
+    data.leaderboard.forEach((p, idx) => {
+      html += `<div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <span>${idx + 1}. ${p.name}</span>
+        <span style="font-weight: bold; color: var(--primary);">${p.score} pts</span>
+      </div>`;
+    });
+    document.getElementById('roundLeaderboard').innerHTML = html;
+  });
+
+  socket.on('game_over', () => {
+    document.getElementById('roundResultOverlay').style.display = 'none';
+    document.getElementById('playingState').style.display = 'none';
+    document.getElementById('finishedState').style.display = 'block';
+    document.querySelector('.status-badge').textContent = 'finished';
+    document.querySelector('.status-badge').className = 'status-badge status-finished';
+  });
+
+  window.submitChoice = function(choice) {
+    if (hasChosen || !currentMatchId) return;
+    hasChosen = true;
+    
+    document.querySelectorAll('.rps-card').forEach(c => c.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById('myStatus').textContent = 'Choice submitted!';
+
+    socket.emit('submit_choice', {
+      matchId: currentMatchId,
+      userId: myUserId,
+      choice: choice
+    });
+  }
+</script>
+@end
