@@ -28,6 +28,19 @@
           </a>
         @end
       </div>
+      <div style="margin-top: 30px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+        @if(rooms.hasPages)
+          @if(rooms.getPreviousPageUrl())
+            <a href="{{ rooms.getPreviousPageUrl() }}" class="btn btn-secondary">&laquo; Previous</a>
+          @endif
+          <div style="padding: 8px 15px; background: rgba(255,255,255,0.05); border-radius: 8px; color: var(--text-muted); font-size: 14px;">
+            Page {{ rooms.currentPage }} of {{ rooms.lastPage }}
+          </div>
+          @if(rooms.getNextPageUrl())
+            <a href="{{ rooms.getNextPageUrl() }}" class="btn btn-secondary">Next &raquo;</a>
+          @endif
+        @endif
+      </div>
     @endif
   </div>
 </div>

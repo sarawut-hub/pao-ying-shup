@@ -53,6 +53,11 @@ export default class SessionController {
       })
     }
     await auth.use('web').login(user)
+    
+    const joinCode = request.input('joinCode')
+    if (joinCode) {
+      return response.redirect().toPath(`/?join=${joinCode}`)
+    }
     return response.redirect().toRoute('home')
   }
 }

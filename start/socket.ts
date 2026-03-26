@@ -23,6 +23,27 @@ app.ready(() => {
              name: p.user?.fullName || `User #${p.userId}`,
              avatar: `https://api.dicebear.com/7.x/${p.user?.avatarStyle || 'fun-emoji'}/svg?seed=${p.user?.avatarSeed || p.user?.id}`
           })))
+
+          if (room.status === 'playing') {
+            const matches = await Match.query().where('roomId', room.id).where('roundNumber', room.currentRound)
+            const unfinished = matches.filter(m => m.winnerId === null && (m.p1Choice === null || m.p2Choice === null))
+            
+            if (unfinished.length === 0 && matches.length > 0) {
+              const top5Raw = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc').limit(5).preload('user')
+              const leaderboard = top5Raw.map(p => ({ 
+                score: p.score, 
+                userId: p.userId, 
+                name: p.user?.fullName || `User #${p.userId}`,
+                avatar: `https://api.dicebear.com/7.x/${p.user?.avatarStyle || 'fun-emoji'}/svg?seed=${p.user?.avatarSeed || p.user?.id}`
+              }))
+              socket.emit('matches_state', { round: room.currentRound, matches })
+              socket.emit('round_finished', { round: room.currentRound, leaderboard })
+            } else {
+              socket.emit('matches_state', { round: room.currentRound, matches })
+            }
+          } else if (room.status === 'finished') {
+             socket.emit('game_over')
+          }
         }
       } catch (e) {
         console.error(e)
@@ -74,12 +95,29 @@ app.ready(() => {
 
     socket.on('submit_choice', async (data) => {
       const { matchId, userId, choice } = data
+      
+      const validChoices = ['rock', 'paper', 'scissors']
+      if (!validChoices.includes(choice)) return
+
       const match = await Match.find(matchId)
       if (!match || match.winnerId !== null) return
 
       if (match.player1Id === userId) match.p1Choice = choice
       else if (match.player2Id === userId) match.p2Choice = choice
       await match.save()
+
+      const currentMatches = await Match.query().where('roomId', match.roomId!).where('roundNumber', match.roundNumber)
+      let submittedCount = 0
+      let totalCount = 0
+      for (const m of currentMatches) {
+        if (m.player1Id) { totalCount++; if (m.p1Choice) submittedCount++ }
+        if (m.player2Id) { totalCount++; if (m.p2Choice) submittedCount++ }
+      }
+      
+      const roomStr = await Room.find(match.roomId)
+      if (roomStr) {
+        io.to(roomStr.code).emit('submit_status', { submitted: submittedCount, total: totalCount })
+      }
 
       if (match.p1Choice && match.p2Choice) {
         const p1 = match.p1Choice
@@ -92,13 +130,13 @@ app.ready(() => {
             winnerId = match.player2Id
           }
         } else {
-          winnerId = 0 // draw
+          winnerId = null // draw
         }
         match.winnerId = winnerId
         await match.save()
 
-        if (winnerId !== null && winnerId > 0) {
-          const rp = await RoomPlayer.query().where('roomId', match.roomId).where('userId', winnerId).first()
+        if (winnerId !== null) {
+          const rp = await RoomPlayer.query().where('roomId', match.roomId!).where('userId', winnerId).first()
           if (rp) {
             rp.score += 1
             await rp.save()
@@ -113,6 +151,130 @@ app.ready(() => {
          io.to(room!.code).emit('matches_state', { round: room!.currentRound, matches })
       }
     })
+
+    socket.on('host_next_action', async (data) => {
+      const room = await Room.findBy('code', data.roomCode)
+      // Only host can perform this action, and only when game is actively playing.
+      if (!room || room.hostId !== data.userId || room.status !== 'playing') return
+
+      const matches = await Match.query().where('roomId', room.id).where('roundNumber', room.currentRound)
+      const unfinished = matches.filter(m => m.winnerId === null && (m.p1Choice === null || m.p2Choice === null))
+
+      if (unfinished.length > 0) {
+        // Force resolve unfinished matches
+        for (const match of unfinished) {
+          // Track strikes for players who missed
+          if (!match.p1Choice && match.player1Id) {
+            const rp1 = await RoomPlayer.query().where('roomId', match.roomId!).where('userId', match.player1Id!).first()
+            if (rp1 && !rp1.isKicked) {
+              rp1.strikes += 1
+              if (rp1.strikes >= 3) rp1.isKicked = true
+              await rp1.save()
+            }
+          }
+          if (!match.p2Choice && match.player2Id) {
+            const rp2 = await RoomPlayer.query().where('roomId', match.roomId!).where('userId', match.player2Id!).first()
+            if (rp2 && !rp2.isKicked) {
+              rp2.strikes += 1
+              if (rp2.strikes >= 3) rp2.isKicked = true
+              await rp2.save()
+            }
+          }
+
+          let winnerId: number | null = null
+          if (match.p1Choice && !match.p2Choice) {
+            winnerId = match.player1Id
+          } else if (match.p2Choice && !match.p1Choice) {
+            winnerId = match.player2Id
+          } else {
+            winnerId = null // both didn't choose = draw
+          }
+          
+          match.p1Choice = match.p1Choice || 'none'
+          match.p2Choice = match.p2Choice || 'none'
+          match.winnerId = winnerId
+          await match.save()
+
+          if (winnerId !== null) {
+            const rp = await RoomPlayer.query().where('roomId', match.roomId!).where('userId', winnerId).first()
+            if (rp) {
+              rp.score += 1
+              await rp.save()
+            }
+          }
+        }
+        await checkAndPushCurrentRound(room, io)
+      } else {
+        // Advance to next round or end game
+        let nextRoundMatches = await Match.query().where('roomId', room.id).where('roundNumber', room.currentRound + 1)
+        
+        // Sudden Death check if tournament is over
+        if (nextRoundMatches.length === 0) {
+          const leaderboard = await RoomPlayer.query().where('roomId', room.id).where('isKicked', false).orderBy('score', 'desc')
+          if (leaderboard.length >= 2 && leaderboard[0].score > 0 && leaderboard[0].score === leaderboard[1].score) {
+             const topScore = leaderboard[0].score
+             const tiedPlayers = leaderboard.filter(p => p.score === topScore)
+             
+             for (let i = 0; i < tiedPlayers.length; i++) {
+               for (let j = i + 1; j < tiedPlayers.length; j++) {
+                 await Match.create({
+                   roomId: room.id,
+                   roundNumber: room.currentRound + 1,
+                   player1Id: tiedPlayers[i].userId,
+                   player2Id: tiedPlayers[j].userId
+                 })
+               }
+             }
+             nextRoundMatches = await Match.query().where('roomId', room.id).where('roundNumber', room.currentRound + 1)
+          }
+        }
+
+        if (nextRoundMatches.length === 0) {
+          room.status = 'finished'
+          await room.save()
+          io.to(room.code).emit('game_over')
+        } else {
+          room.currentRound++
+          await room.save()
+          
+          // Pre-fill kicked players' choices
+          let kickedAny = false
+          for (const m of nextRoundMatches) {
+            const rp1 = m.player1Id ? await RoomPlayer.query().where('roomId', room.id).where('userId', m.player1Id!).first() : null
+            const rp2 = m.player2Id ? await RoomPlayer.query().where('roomId', room.id).where('userId', m.player2Id!).first() : null
+            if (rp1?.isKicked) m.p1Choice = 'kicked'
+            if (rp2?.isKicked) m.p2Choice = 'kicked'
+            if (rp1?.isKicked || rp2?.isKicked) {
+              await m.save()
+              kickedAny = true
+            }
+          }
+
+          io.to(room.code).emit('new_round', { round: room.currentRound, matches: nextRoundMatches })
+
+          // If anyone was kicked in the new round, auto-evaluate their matches immediately if possible
+          if (kickedAny) {
+            await checkAndPushCurrentRound(room, io)
+          }
+        }
+      }
+    })
+
+    socket.on('takeover_host', async (data) => {
+      const room = await Room.findBy('code', data.roomCode)
+      if (!room) return
+      
+      const rp = await RoomPlayer.query().where('roomId', room.id).where('userId', data.userId).first()
+      if (rp) {
+        room.hostId = data.userId
+        await room.save()
+        io.to(room.code).emit('host_transferred', { hostId: data.userId })
+      }
+    })
+
+    socket.on('chat_message', (data) => {
+      io.to(data.roomCode).emit('chat_message', data)
+    })
   })
 
   async function checkAndPushCurrentRound(room: Room, io: Server) {
@@ -121,10 +283,38 @@ app.ready(() => {
        await room.save()
     }
     const matches = await Match.query().where('roomId', room.id).where('roundNumber', room.currentRound)
-    const unfinished = matches.filter(m => m.winnerId === null)
+    const unfinished = matches.filter(m => m.winnerId === null && (m.p1Choice === null || m.p2Choice === null))
 
     if (unfinished.length === 0) {
       if (matches.length > 0) {
+        // Evaluate tie-breakers
+        const tiedMatches = matches.filter(m => m.winnerId === null)
+        
+        if (tiedMatches.length > 0) {
+          // Push future rounds by 1
+          const futureMatches = await Match.query().where('roomId', room.id).where('roundNumber', '>', room.currentRound).orderBy('roundNumber', 'desc')
+          for (const fm of futureMatches) {
+            fm.roundNumber += 1
+            await fm.save()
+          }
+          
+          // Add tie breakers in the very next round
+          for (const tie of tiedMatches) {
+            const tm = await Match.create({
+              roomId: room.id,
+              roundNumber: room.currentRound + 1,
+              player1Id: tie.player1Id,
+              player2Id: tie.player2Id
+            })
+            // Immediately apply kicks for the tie breaker match
+            const rp1 = tie.player1Id ? await RoomPlayer.query().where('roomId', room.id).where('userId', tie.player1Id as number).first() : null
+            const rp2 = tie.player2Id ? await RoomPlayer.query().where('roomId', room.id).where('userId', tie.player2Id as number).first() : null
+            if (rp1?.isKicked) tm.p1Choice = 'kicked'
+            if (rp2?.isKicked) tm.p2Choice = 'kicked'
+            if (rp1?.isKicked || rp2?.isKicked) await tm.save()
+          }
+        }
+        
         const top5Raw = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc').limit(5).preload('user')
         const leaderboard = top5Raw.map(p => ({ 
           score: p.score, 
@@ -132,22 +322,11 @@ app.ready(() => {
           name: p.user?.fullName || `User #${p.userId}`,
           avatar: `https://api.dicebear.com/7.x/${p.user?.avatarStyle || 'fun-emoji'}/svg?seed=${p.user?.avatarSeed || p.user?.id}`
         }))
-        io.to(room.code).emit('round_finished', { round: room.currentRound, leaderboard })
+        io.to(room.code).emit('round_finished', { round: room.currentRound, leaderboard, matches: matches.map(m => m.serialize()) })
       }
-
-      const nextRoundMatches = await Match.query().where('roomId', room.id).where('roundNumber', room.currentRound + 1)
-      if (nextRoundMatches.length === 0) {
-        room.status = 'finished'
-        await room.save()
-        io.to(room.code).emit('game_over')
-      } else {
-        // Wait 5 seconds before starting next round
-        setTimeout(async () => {
-             room.currentRound++
-             await room.save()
-             io.to(room.code).emit('new_round', { round: room.currentRound, matches: nextRoundMatches })
-        }, 5000)
-      }
+      
+      // Removed automatic transition to next round.
+      // Host will emit 'host_next_action' to continue.
     } else {
       io.to(room.code).emit('matches_state', { round: room.currentRound, matches })
     }

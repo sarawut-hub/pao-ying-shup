@@ -16,6 +16,7 @@ export type ScannedRoutes = {
     'rooms.create': { paramsTuple?: []; params?: {} }
     'rooms.join': { paramsTuple?: []; params?: {} }
     'rooms.show': { paramsTuple: [ParamValue]; params: {'code': ParamValue} }
+    'rooms.delete': { paramsTuple: [ParamValue]; params: {'code': ParamValue} }
     'reports.index': { paramsTuple?: []; params?: {} }
     'reports.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
@@ -45,6 +46,7 @@ export type ScannedRoutes = {
     'profile.update': { paramsTuple?: []; params?: {} }
     'rooms.create': { paramsTuple?: []; params?: {} }
     'rooms.join': { paramsTuple?: []; params?: {} }
+    'rooms.delete': { paramsTuple: [ParamValue]; params: {'code': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

@@ -38,8 +38,9 @@ router
 
     // Game Routes
     router.post('rooms/create', [GamesController, 'createRoom']).as('rooms.create')
-    router.post('rooms/join', [GamesController, 'joinRoom']).as('rooms.join')
+    router.post('rooms/join', [GamesController, 'joinRoom']).as('rooms.join').use(middleware.throttle())
     router.get('rooms/:code', [GamesController, 'showRoom']).as('rooms.show')
+    router.post('rooms/:code/delete', [GamesController, 'deleteRoom']).as('rooms.delete')
     
     // Reports
     router.get('reports', [GamesController, 'report']).as('reports.index')

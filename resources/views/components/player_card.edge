@@ -1,0 +1,42 @@
+@if(variant === 'report')
+  <div class="leaderboard-item" style="padding: 25px 30px;">
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <div class="rank-badge rank-{{ index + 1 }}" style="width: 40px; height: 40px; font-size: 18px;">
+        #{{ index + 1 }}
+      </div>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <img src="https://api.dicebear.com/7.x/{{ player.user?.avatarStyle || 'fun-emoji' }}/svg?seed={{ player.user?.avatarSeed || player.userId }}" style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid var(--primary);">
+        <div>
+          <h3 style="margin: 0; font-size: 20px;">{{ player.user?.fullName || `User #${player.userId}` }}</h3>
+          @if(player.userId === auth.user?.id)
+            <span class="status-badge" style="background: rgba(139,92,246,0.2); color: var(--primary); margin-top: 5px; display: inline-block;">You</span>
+          @endif
+        </div>
+      </div>
+    </div>
+    
+    <div style="text-align: right;">
+      <div style="font-size: 32px; font-weight: 800; color: var(--primary); line-height: 1;">{{ player.score }}</div>
+      <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Points</div>
+    </div>
+  </div>
+@else
+  <div class="leaderboard-item">
+    <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+      <img
+        src="https://api.dicebear.com/7.x/{{ player.user?.avatarStyle || 'fun-emoji' }}/svg?seed={{ player.user?.avatarSeed || player.userId }}"
+        style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border);">
+      <div
+        style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+        {{ player.user?.fullName || `User #${player.userId}` }}</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      @if(player.userId === auth.user?.id)
+      <span class="status-badge"
+        style="background: rgba(139,92,246,0.2); color: var(--primary); font-size: 10px;">You</span>
+      @endif
+      <div class="rank-badge"
+        style="background: var(--glass-border); min-width: 28px; height: 28px; font-size: 12px;">{{ player.score }}</div>
+    </div>
+  </div>
+@endif

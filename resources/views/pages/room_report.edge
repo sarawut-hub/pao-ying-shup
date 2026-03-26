@@ -11,33 +11,19 @@
 
   <div class="glass-panel" style="padding: 0; overflow: hidden;">
     @each((player, index) in players)
-      <div class="leaderboard-item" style="padding: 25px 30px;">
-        <div style="display: flex; align-items: center; gap: 20px;">
-          <div class="rank-badge rank-{{ index + 1 }}" style="width: 40px; height: 40px; font-size: 18px;">
-            #{{ index + 1 }}
-          </div>
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="https://api.dicebear.com/7.x/{{ player.user?.avatarStyle || 'fun-emoji' }}/svg?seed={{ player.user?.avatarSeed || player.userId }}" style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid var(--primary);">
-            <div>
-              <h3 style="margin: 0; font-size: 20px;">{{ player.user?.fullName || `User #${player.userId}` }}</h3>
-              @if(player.userId === auth.user?.id)
-                <span class="status-badge" style="background: rgba(139,92,246,0.2); color: var(--primary); margin-top: 5px; display: inline-block;">You</span>
-              @endif
-            </div>
-          </div>
-        </div>
-        
-        <div style="text-align: right;">
-          <div style="font-size: 32px; font-weight: 800; color: var(--primary); line-height: 1;">{{ player.score }}</div>
-          <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Points</div>
-        </div>
-      </div>
+      @!component('components/player_card', { player, index, auth, variant: 'report' })
     @end
   </div>
 
-  <div style="text-align: center; margin-top: 40px;">
+  <div style="text-align: center; margin-top: 40px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
     <a href="{{ route('reports.index') }}" class="btn btn-secondary">Back to Reports</a>
-    <a href="{{ route('home') }}" class="btn" style="margin-left: 15px;">Play Again</a>
+    <a href="{{ route('home') }}" class="btn">Play Again</a>
+    @if(isHost)
+    <form action="{{ route('rooms.delete', { code: room.code }) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Are you sure you want to permanently delete this room and all its match data?');">
+      {{ csrfField() }}
+      <button type="submit" class="btn" style="background-color: #ef4444; color: white;">Delete Room</button>
+    </form>
+    @end
   </div>
 </div>
 @end

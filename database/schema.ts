@@ -33,16 +33,20 @@ export class MatchSchema extends BaseModel {
 }
 
 export class RoomPlayerSchema extends BaseModel {
-  static $columns = ['createdAt', 'id', 'roomId', 'score', 'updatedAt', 'userId'] as const
+  static $columns = ['createdAt', 'id', 'isKicked', 'roomId', 'score', 'strikes', 'updatedAt', 'userId'] as const
   $columns = RoomPlayerSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
   declare id: number
   @column()
+  declare isKicked: boolean | null
+  @column()
   declare roomId: number | null
   @column()
   declare score: number
+  @column()
+  declare strikes: number | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()

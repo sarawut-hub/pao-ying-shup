@@ -27,10 +27,10 @@
       <div class="glass-panel" style="background: rgba(236, 72, 153, 0.05); border-color: rgba(236, 72, 153, 0.2);">
         <h2 style="font-size: 24px; margin-bottom: 8px;">Join a Room</h2>
         <p>Enter a room code to jump straight into the action.</p>
-        <form action="{{ route('rooms.join') }}" method="POST">
+        <form id="joinFormAuth" action="{{ route('rooms.join') }}" method="POST">
           {{ csrfField() }}
           <div class="form-group" style="margin-top: 20px;">
-            <input type="text" name="code" placeholder="e.g. A1B2C3" required style="font-size: 20px; text-align: center; letter-spacing: 4px; text-transform: uppercase;">
+            <input type="text" id="authRoomCode" name="code" placeholder="e.g. A1B2C3" required style="font-size: 20px; text-align: center; letter-spacing: 4px; text-transform: uppercase;">
           </div>
           <button type="submit" class="btn btn-secondary" style="width: 100%; padding: 14px; border-color: var(--secondary); color: white;">Join Game</button>
         </form>
@@ -43,6 +43,7 @@
         <p>Enter your Employee ID to join instantly without registering.</p>
         <form action="{{ route('guest.login') }}" method="POST">
           {{ csrfField() }}
+          <input type="hidden" name="joinCode" id="guestJoinCode">
           <div class="form-group" style="margin-top: 20px;">
             <input type="text" name="employeeId" placeholder="Employee ID" required style="font-size: 18px; text-align: center;">
           </div>
@@ -61,4 +62,27 @@
     </div>
   @endif
 </div>
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinCode = urlParams.get('join');
+    
+    if (joinCode) {
+      // Auto-fill and submit for authenticated users
+      const authCodeInput = document.getElementById('authRoomCode');
+      if (authCodeInput) {
+        authCodeInput.value = joinCode;
+        document.getElementById('joinFormAuth').submit();
+      }
+      
+      // Preserve for guest login flow
+      const guestJoinInput = document.getElementById('guestJoinCode');
+      if (guestJoinInput) {
+        guestJoinInput.value = joinCode;
+      }
+    }
+  });
+</script>
+
 @end

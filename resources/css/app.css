@@ -99,6 +99,7 @@ header > div {
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(to right, #8b5cf6, #ec4899);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-decoration: none;
@@ -328,6 +329,7 @@ input:focus {
   font-size: 24px;
   font-weight: 800;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   padding: 0 40px;
@@ -351,4 +353,71 @@ input:focus {
   margin-top: 15px;
   font-size: 14px;
   color: var(--text-muted);
+}
+
+/* --- RESPONSIVE OVERRIDES --- */
+@media (max-width: 900px) {
+  .split-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .glass-panel {
+    padding: 20px;
+  }
+  
+  .match-arena {
+    padding: 20px;
+    flex-direction: column;
+    gap: 30px;
+  }
+  
+  .rps-choices {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  
+  .rps-card {
+    width: calc(33.333% - 14px);
+    padding: 15px 10px;
+  }
+  
+  .rps-icon {
+    font-size: 32px;
+  }
+  
+  /* Chat Overlay */
+  #chatBox {
+    bottom: 10px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+  }
+  
+  /* Battle Animation Resize */
+  #battleOverlay > div {
+    gap: 20px !important;
+    flex-direction: column;
+  }
+  
+  #myBattleCard, #oppBattleCard {
+    width: 120px !important;
+    height: 120px !important;
+    font-size: 60px !important;
+  }
+  
+  #vsText {
+    font-size: 40px !important;
+  }
+  
+  #battleText {
+    font-size: 32px !important;
+    margin-bottom: 20px !important;
+  }
+  
+  #battleWinnerText {
+    font-size: 48px !important;
+    margin-top: 20px !important;
+    text-align: center;
+  }
 }

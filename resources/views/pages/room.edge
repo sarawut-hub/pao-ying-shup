@@ -10,10 +10,33 @@
       </h1>
       <p style="margin: 5px 0 0; color: var(--text-muted); font-size: 14px;">Status: <span
           class="status-badge status-{{ room.status }}">{{ room.status }}</span></p>
+      
+      @if(room.status === 'waiting')
+      <button onclick="toggleQR()" class="btn btn-secondary" style="margin-top: 15px; font-size: 14px; padding: 6px 16px; border-color: var(--primary); color: white;">📱 Show QR Code</button>
+      <div id="qrContainer" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 12px; width: max-content;">
+        <img id="qrImage" src="" width="180" height="180" alt="Room QR Code">
+        <p style="color: black; margin: 10px 0 0; text-align: center; font-weight: bold; font-size: 18px;">{{ room.code }}</p>
+      </div>
+      <script>
+        function toggleQR() {
+          const qrContainer = document.getElementById('qrContainer');
+          if (qrContainer.style.display === 'none') {
+            const joinUrl = window.location.origin + '/?join={{ room.code }}';
+            document.getElementById('qrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(joinUrl);
+            qrContainer.style.display = 'block';
+          } else {
+            qrContainer.style.display = 'none';
+          }
+        }
+      </script>
+      @endif
     </div>
 
-    @if(isHost && room.status === 'waiting')
-    <button id="startGameBtn" class="btn">🚀 Start Game</button>
+    @if(isHost)
+    <div id="hostActions" style="display: flex; gap: 10px;">
+      <button id="startGameBtn" class="btn" style="{{ room.status === 'waiting' ? '' : 'display: none;' }}">🚀 Start Game</button>
+      <button id="hostNextActionBtn" class="btn btn-warning" style="display: none; background-color: var(--secondary); color: white;">Force End Round</button>
+    </div>
     @end
   </div>
 
@@ -31,6 +54,11 @@
 
       <div id="playingState" style="display: none;">
         <h2 style="text-align: center;">Round <span id="roundNumberDisplay">{{ room.currentRound || 1 }}</span></h2>
+
+        <div id="roundTimerContainer" style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 20px;">
+          <div id="roundTimerBar" style="height: 100%; width: 100%; background: var(--primary); transition: width 1s linear;"></div>
+        </div>
+        <p id="roundTimerText" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-top: -10px; margin-bottom: 20px;">15s remaining</p>
 
         <div id="myMatchContainer" style="display: none;">
           <div class="match-arena">
@@ -78,8 +106,14 @@
           <h2>No match for you this round!</h2>
           <p>Please wait for the others to finish.</p>
         </div>
+        
+        @if(isHost)
+        <div id="hostDashboard" style="margin-top: 20px; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; text-align: center; border: 1px solid var(--glass-border);">
+          <h3 style="margin-top: 0; color: var(--primary); font-size: 16px;">Host Dashboard</h3>
+          <p style="margin: 0; font-size: 18px; font-weight: bold;"><span id="submittedCount">0</span> / <span id="totalCount">0</span> Players Submitted</p>
+        </div>
+        @end
       </div>
-
       <div id="finishedState" style="{{ room.status === 'finished' ? '' : 'display: none;' }} text-align: center;">
         <h2 style="font-size: 36px; margin-top: 60px; color: var(--success);">Game Over!</h2>
         <p style="font-size: 20px;">Check out the final leaderboard to see who won.</p>
@@ -96,7 +130,21 @@
         <div id="roundLeaderboard" style="width: 80%; max-width: 400px; text-align: left;">
           <!-- Injected via JS -->
         </div>
-        <p style="margin-top: 30px; color: var(--text-muted);">Next round starting soon...</p>
+        <p id="roundWaitText" style="margin-top: 30px; color: var(--text-muted);">Waiting for host...</p>
+        @if(isHost)
+        <button id="hostOverlayNextBtn" class="btn" style="margin-top: 20px; display: none; background-color: var(--primary); color: white;">Start Next Round</button>
+        @end
+      </div>
+
+      <!-- Epic Battle Animation Overlay -->
+      <div id="battleOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; overflow: hidden; font-family: 'Inter', sans-serif;">
+        <h2 id="battleText" style="color: white; font-size: 40px; margin-bottom: 50px; text-shadow: 0 0 20px var(--primary); opacity: 0; transition: opacity 0.5s; font-style: italic;">BATTLE!</h2>
+        <div style="display: flex; gap: 50px; align-items: center;">
+          <div id="myBattleCard" style="width: 200px; height: 200px; font-size: 100px; background: white; border-radius: 30px; display: flex; align-items: center; justify-content: center; transform: translateX(-150vw); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 8px solid var(--primary); box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></div>
+          <div id="vsText" style="color: red; font-size: 80px; font-style: italic; opacity: 0; transition: opacity 0.5s; font-weight: 900; text-shadow: 0 0 30px red;">VS</div>
+          <div id="oppBattleCard" style="width: 200px; height: 200px; font-size: 100px; background: white; border-radius: 30px; display: flex; align-items: center; justify-content: center; transform: translateX(150vw); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 8px solid var(--secondary); box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></div>
+        </div>
+        <h1 id="battleWinnerText" style="color: #fbbf24; font-size: 80px; margin-top: 50px; opacity: 0; transition: all 0.3s; transform: scale(0.5); text-shadow: 0 0 40px #fbbf24; font-family: monospace; font-weight: bold;"></h1>
       </div>
 
     </div>
@@ -107,32 +155,36 @@
         style="font-size: 22px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
         Players & Leaderboard
       </h2>
-      <div id="playersList">
+      <div id="playersList" style="max-height: 50vh; overflow-y: auto; padding-right: 10px;">
         @each(player in players)
-        <div class="leaderboard-item">
-          <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
-            <img
-              src="https://api.dicebear.com/7.x/{{ player.user?.avatarStyle || 'fun-emoji' }}/svg?seed={{ player.user?.avatarSeed || player.userId }}"
-              style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border);">
-            <div
-              style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
-              {{ player.user?.fullName || `User #${player.userId}` }}</div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            @if(player.userId === auth.user.id)
-            <span class="status-badge"
-              style="background: rgba(139,92,246,0.2); color: var(--primary); font-size: 10px;">You</span>
-            @endif
-            <div class="rank-badge"
-              style="background: var(--glass-border); min-width: 28px; height: 28px; font-size: 12px;">{{ player.score
-              }}</div>
-          </div>
-        </div>
+          @!component('components/player_card', { player, auth, variant: 'side' })
         @end
       </div>
-      <div style="margin-top: 20px; text-align: center;">
+      <div style="margin-top: 20px; text-align: center; display: flex; flex-direction: column; gap: 10px;">
         <a href="{{ route('reports.show', { id: room.id }) }}"
           style="color: var(--primary); font-size: 14px; text-decoration: underline;">View Full Leaderboard</a>
+        @if(!isHost)
+        <button id="takeoverHostBtn" class="btn" style="background-color: var(--glass-border); color: var(--text-muted); padding: 8px 16px; font-size: 14px; margin-top: 10px;">Takeover Host</button>
+        @end
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat System -->
+  <div id="chatBox" style="position: fixed; bottom: 20px; left: 20px; width: 320px; z-index: 100;">
+    <div id="chatHeader" onclick="toggleChat()" style="background: rgba(15, 23, 42, 0.95); padding: 10px 15px; border-radius: 12px 12px 0 0; border: 1px solid var(--glass-border); border-bottom: none; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+      <span style="font-weight: bold; color: white;">💬 Live Chat</span>
+      <span id="chatToggleIcon" style="color: var(--text-muted);">▼</span>
+    </div>
+    <div id="chatBody" style="display: flex; flex-direction: column;">
+      <div id="chatMessages" style="flex-grow: 1; overflow-y: auto; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); padding: 15px; display: flex; flex-direction: column; gap: 8px; height: 250px;">
+        <div style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 10px;">Welcome to the room chat!</div>
+      </div>
+      <div style="background: rgba(15, 23, 42, 0.95); padding: 10px; border-radius: 0 0 12px 12px; border: 1px solid var(--glass-border); display: flex; gap: 5px; align-items: center;">
+        <input type="text" id="chatInput" onkeypress="if(event.key === 'Enter') sendChat()" placeholder="Chat..." style="flex-grow: 1; border: none; border-radius: 6px; padding: 8px 12px; background: rgba(255,255,255,0.1); color: white; outline: none; width: 50%;">
+        <button onclick="sendChat()" class="btn" style="padding: 8px 12px; background: var(--primary);">Send</button>
+        <button onclick="sendEmote('🔥')" class="btn" style="padding: 8px; background: rgba(255,255,255,0.1);">🔥</button>
+        <button onclick="sendEmote('😂')" class="btn" style="padding: 8px; background: rgba(255,255,255,0.1);">😂</button>
       </div>
     </div>
   </div>
@@ -141,9 +193,29 @@
 
 <style>
   @keyframes spin {
-    100% {
-      transform: rotate(360deg);
-    }
+    100% { transform: rotate(360deg); }
+  }
+  
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: translateY(-150px) scale(1.5) rotate(10deg); opacity: 0.9; }
+    100% { transform: translateY(-400px) scale(2) rotate(-10deg); opacity: 0; }
+  }
+  .floating-emote {
+    position: fixed;
+    font-size: 40px;
+    pointer-events: none;
+    animation: floatUp 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    z-index: 9999;
+  }
+  
+  @keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .pop-in {
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
 </style>
 
@@ -183,19 +255,72 @@
     socket.emit('start_game', { roomCode });
   });
 
+  document.getElementById('hostNextActionBtn')?.addEventListener('click', (e) => {
+    e.target.disabled = true;
+    e.target.textContent = 'Processing...';
+    socket.emit('host_next_action', { roomCode, userId: myUserId });
+  });
+
+  document.getElementById('hostOverlayNextBtn')?.addEventListener('click', (e) => {
+    e.target.disabled = true;
+    e.target.textContent = 'Processing...';
+    socket.emit('host_next_action', { roomCode, userId: myUserId });
+  });
+
+  document.getElementById('takeoverHostBtn')?.addEventListener('click', (e) => {
+    if (confirm('Are you sure you want to takeover as the host?')) {
+      e.target.disabled = true;
+      e.target.textContent = 'Transferring...';
+      socket.emit('takeover_host', { roomCode, userId: myUserId });
+    }
+  });
+
+  socket.on('host_transferred', (data) => {
+    // Reload the page to rerender UI with new host permissions
+    window.location.reload();
+  });
+
   socket.on('game_started', () => {
     document.getElementById('waitingState').style.display = 'none';
-    document.getElementById('startGameBtn').style.display = 'none';
-    document.querySelector('.status-waiting').textContent = 'playing';
-    document.querySelector('.status-waiting').className = 'status-badge status-playing';
+    const startBtn = document.getElementById('startGameBtn');
+    if (startBtn) startBtn.style.display = 'none';
+    
+    const hostNextBtn = document.getElementById('hostNextActionBtn');
+    if (hostNextBtn) {
+      hostNextBtn.style.display = 'inline-block';
+      hostNextBtn.textContent = 'Force End Round';
+    }
+
+    document.querySelector('.status-waiting')?.classList.replace('status-waiting', 'status-playing');
+    const badge = document.querySelector('.status-playing') || document.querySelector('.status-badge');
+    if(badge) {
+      badge.textContent = 'playing';
+      badge.className = 'status-badge status-playing';
+    }
   });
 
   socket.on('new_round', (data) => {
+    if (window.playStart) window.playStart();
     document.getElementById('roundResultOverlay').style.display = 'none';
     hasChosen = false;
-    document.querySelectorAll('.rps-card').forEach(c => c.classList.remove('active'));
-    document.getElementById('myStatus').textContent = 'Make your choice!';
-    document.getElementById('opponentStatus').textContent = 'Thinking...';
+    document.querySelectorAll('.rps-card').forEach(c => {
+      c.classList.remove('active');
+      c.classList.remove('pop-in');
+      void c.offsetWidth; // trigger reflow
+      c.classList.add('pop-in');
+    });
+    
+    if (document.getElementById('myStatus')) document.getElementById('myStatus').textContent = 'Make your choice!';
+    if (document.getElementById('opponentStatus')) document.getElementById('opponentStatus').textContent = 'Thinking...';
+    
+    const hostNextBtn = document.getElementById('hostNextActionBtn');
+    if (hostNextBtn) {
+      hostNextBtn.style.display = 'inline-block';
+      hostNextBtn.textContent = 'Force End Round';
+    }
+    const hostOverlayNextBtn = document.getElementById('hostOverlayNextBtn');
+    if (hostOverlayNextBtn) hostOverlayNextBtn.style.display = 'none';
+
     setupRound(data);
   });
 
@@ -207,6 +332,23 @@
     document.getElementById('waitingState').style.display = 'none';
     document.getElementById('finishedState').style.display = 'none';
     document.getElementById('playingState').style.display = 'block';
+    
+    document.querySelector('.status-waiting')?.classList.replace('status-waiting', 'status-playing');
+    const badge = document.querySelector('.status-playing') || document.querySelector('.status-badge');
+    if(badge && badge.textContent !== 'finished') {
+      badge.textContent = 'playing';
+      badge.className = 'status-badge status-playing';
+    }
+
+    const hostNextBtn = document.getElementById('hostNextActionBtn');
+    if (hostNextBtn) {
+      hostNextBtn.style.display = 'inline-block';
+      hostNextBtn.disabled = false;
+      hostNextBtn.textContent = 'Force End Round';
+    }
+    const startBtn = document.getElementById('startGameBtn');
+    if (startBtn) startBtn.style.display = 'none';
+
     document.getElementById('roundNumberDisplay').textContent = data.round;
 
     const myMatch = data.matches.find(m => m.player1Id === myUserId || m.player2Id === myUserId);
@@ -217,9 +359,15 @@
 
       const oppId = myMatch.player1Id === myUserId ? myMatch.player2Id : myMatch.player1Id;
       const oppContext = globalPlayersList.find(p => p.userId === oppId);
-      document.getElementById('opponentName').textContent = oppContext ? oppContext.name : ('User #' + oppId);
-      if (oppContext) {
-        document.getElementById('opponentAvatar').src = oppContext.avatar;
+      
+      if (oppId === null) {
+        document.getElementById('opponentName').textContent = 'NO OPPONENT (BYE)';
+        document.getElementById('opponentAvatar').src = 'https://api.dicebear.com/7.x/bottts/svg?seed=bye';
+      } else {
+        document.getElementById('opponentName').textContent = oppContext ? oppContext.name : ('User #' + oppId);
+        if (oppContext) {
+          document.getElementById('opponentAvatar').src = oppContext.avatar;
+        }
       }
 
       const myChoice = myMatch.player1Id === myUserId ? myMatch.p1Choice : myMatch.p2Choice;
@@ -238,13 +386,47 @@
     } else {
       document.getElementById('myMatchContainer').style.display = 'none';
       document.getElementById('spectatingContainer').style.display = 'block';
+      if ({{ isSpectator ? 'true' : 'false' }}) {
+        document.querySelector('#spectatingContainer h2').textContent = 'You are spectating!';
+        document.querySelector('#spectatingContainer p').textContent = 'Enjoy the live match! 🍿';
+      }
+    }
+
+    if (window.currentRoundVisual !== data.round) {
+      window.currentRoundVisual = data.round;
+      let timeLeft = 15;
+      const timerBar = document.getElementById('roundTimerBar');
+      const timerText = document.getElementById('roundTimerText');
+      if (timerBar && timerText) {
+        timerBar.style.transition = 'none';
+        timerBar.style.width = '100%';
+        timerText.textContent = timeLeft + 's remaining';
+        
+        // small delay to allow browser to register the 100% width before transitioning to 99%
+        setTimeout(() => timerBar.style.transition = 'width 1s linear', 50);
+
+        if (window.roundInterval) clearInterval(window.roundInterval);
+        window.roundInterval = setInterval(() => {
+          timeLeft--;
+          if (timeLeft > 0 && timeLeft <= 5 && window.playTick) window.playTick();
+          if (timeLeft <= 0) {
+            timeLeft = 0;
+            timerBar.style.width = '0%';
+            timerText.textContent = "Time's up!";
+            clearInterval(window.roundInterval);
+          } else {
+            timerBar.style.width = (timeLeft / 15 * 100) + '%';
+            timerText.textContent = timeLeft + 's remaining';
+          }
+        }, 1000);
+      }
     }
   }
 
   socket.on('round_finished', (data) => {
-    const overlay = document.getElementById('roundResultOverlay');
-    overlay.style.display = 'flex';
-
+    if (window.roundInterval) clearInterval(window.roundInterval);
+    
+    // Construct the Result Leaderboard HTML
     let html = '';
     data.leaderboard.forEach((p, idx) => {
       html += `<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
@@ -257,14 +439,97 @@
       </div>`;
     });
     document.getElementById('roundLeaderboard').innerHTML = html;
+
+    const hostNextBtn = document.getElementById('hostNextActionBtn');
+    if (hostNextBtn) hostNextBtn.style.display = 'none';
+
+    const hostOverlayNextBtn = document.getElementById('hostOverlayNextBtn');
+    if (hostOverlayNextBtn) {
+      hostOverlayNextBtn.style.display = 'block';
+      hostOverlayNextBtn.disabled = false;
+      hostOverlayNextBtn.textContent = 'Start Next Round';
+    }
+
+    const isSpec = {{ isSpectator ? 'true' : 'false' }};
+    const myMatch = data.matches ? data.matches.find(m => m.player1Id === myUserId || m.player2Id === myUserId) : null;
+
+    if (myMatch && !isSpec) {
+      if (window.playOver) window.playOver();
+      
+      const myChoice = myMatch.player1Id === myUserId ? myMatch.p1Choice : myMatch.p2Choice;
+      const oppChoice = myMatch.player1Id === myUserId ? myMatch.p2Choice : myMatch.p1Choice;
+      let winStatus = 'DRAW!';
+      if (myMatch.winnerId === myUserId) winStatus = 'YOU WIN!';
+      else if (myMatch.winnerId && myMatch.winnerId !== myUserId) winStatus = 'YOU LOSE!';
+      else if (oppChoice === null) winStatus = 'WAITING / BYE';
+
+      const emojis = { 'rock': '👊', 'paper': '✋', 'scissors': '✌️', 'null': '❌', 'kicked': '☠️' };
+
+      document.getElementById('myBattleCard').textContent = emojis[myChoice] || '❌';
+      document.getElementById('oppBattleCard').textContent = emojis[oppChoice] || (myMatch.player2Id === null ? '👻' : '❌');
+      document.getElementById('battleWinnerText').textContent = winStatus;
+      
+      const overlay = document.getElementById('battleOverlay');
+      overlay.style.display = 'flex';
+      
+      // Choreograph Battle Animation
+      setTimeout(() => {
+        document.getElementById('battleText').style.opacity = '1';
+        document.getElementById('myBattleCard').style.transform = 'translateX(0)';
+        document.getElementById('oppBattleCard').style.transform = 'translateX(0)';
+        setTimeout(() => {
+          document.getElementById('vsText').style.opacity = '1';
+          setTimeout(() => {
+            document.getElementById('battleWinnerText').style.opacity = '1';
+            document.getElementById('battleWinnerText').style.transform = 'scale(1)';
+            
+            // Wait 2.5s and then show leaderboard
+            setTimeout(() => {
+              overlay.style.display = 'none';
+              // Cleanup
+              document.getElementById('battleText').style.opacity = '0';
+              document.getElementById('myBattleCard').style.transform = 'translateX(-150vw)';
+              document.getElementById('oppBattleCard').style.transform = 'translateX(150vw)';
+              document.getElementById('vsText').style.opacity = '0';
+              document.getElementById('battleWinnerText').style.opacity = '0';
+              document.getElementById('battleWinnerText').style.transform = 'scale(0.5)';
+              
+              document.getElementById('roundResultOverlay').style.display = 'flex';
+            }, 3000);
+          }, 300);
+        }, 400);
+      }, 50);
+    } else {
+      document.getElementById('roundResultOverlay').style.display = 'flex';
+    }
+  });
+
+  socket.on('submit_status', (data) => {
+    const sC = document.getElementById('submittedCount');
+    const tC = document.getElementById('totalCount');
+    if (sC && tC) {
+      sC.textContent = data.submitted;
+      tC.textContent = data.total;
+    }
   });
 
   socket.on('game_over', () => {
+    if (window.playOver) window.playOver();
+    if (window.roundInterval) clearInterval(window.roundInterval);
     document.getElementById('roundResultOverlay').style.display = 'none';
     document.getElementById('playingState').style.display = 'none';
     document.getElementById('finishedState').style.display = 'block';
-    document.querySelector('.status-badge').textContent = 'finished';
-    document.querySelector('.status-badge').className = 'status-badge status-finished';
+    
+    const hostNextBtn = document.getElementById('hostNextActionBtn');
+    if (hostNextBtn) hostNextBtn.style.display = 'none';
+    const hostOverlayNextBtn = document.getElementById('hostOverlayNextBtn');
+    if (hostOverlayNextBtn) hostOverlayNextBtn.style.display = 'none';
+
+    const badge = document.querySelector('.status-badge');
+    if (badge) {
+      badge.textContent = 'finished';
+      badge.className = 'status-badge status-finished';
+    }
   });
 
   window.submitChoice = function (choice) {
@@ -281,5 +546,86 @@
       choice: choice
     });
   }
+
+  // --- CHAT SYSTEM ---
+  const myName = '{{ auth.user?.fullName || "Guest" }}';
+
+  window.toggleChat = function() {
+    const body = document.getElementById('chatBody');
+    const icon = document.getElementById('chatToggleIcon');
+    const header = document.getElementById('chatHeader');
+    if (body.style.display === 'none') {
+      body.style.display = 'flex';
+      icon.textContent = '▼';
+      header.style.borderRadius = '12px 12px 0 0';
+    } else {
+      body.style.display = 'none';
+      icon.textContent = '▲';
+      header.style.borderRadius = '12px';
+    }
+  }
+
+  window.sendChat = function() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    socket.emit('chat_message', { roomCode, user: myName, text: msg, isEmote: false });
+    input.value = '';
+  }
+
+  window.sendEmote = function(emoji) {
+    socket.emit('chat_message', { roomCode, user: myName, text: emoji, isEmote: true });
+  }
+
+  socket.on('chat_message', (data) => {
+    const box = document.getElementById('chatMessages');
+    const el = document.createElement('div');
+    el.style.fontSize = data.isEmote ? '20px' : '14px';
+    if(data.isEmote) {
+      if (window.playEmote && data.user !== myName) window.playEmote();
+      el.textContent = `${data.user}: ${data.text}`;
+      
+      const floatEl = document.createElement('div');
+      floatEl.className = 'floating-emote';
+      floatEl.textContent = data.text;
+      const chatBox = document.getElementById('chatBox');
+      const rect = chatBox.getBoundingClientRect();
+      const randomX = rect.left + 50 + Math.random() * (rect.width - 100);
+      floatEl.style.left = randomX + 'px';
+      floatEl.style.bottom = '100px'; 
+      document.body.appendChild(floatEl);
+      setTimeout(() => floatEl.remove(), 2000);
+
+    } else {
+      if (window.playChat && data.user !== myName) window.playChat();
+      el.innerHTML = `<span style="color:var(--primary); font-weight:bold;">${data.user}:</span> <span style="color: white; word-break: break-all;">${data.text}</span>`;
+    }
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  });
+
+  // --- SOUND EFFECTS (AudioContext) ---
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  function playTone(freq, type, duration, vol=0.1) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  window.playTick = function() { playTone(800, 'sine', 0.1, 0.05); }
+  window.playEmote = function() { playTone(1200, 'triangle', 0.1, 0.05); setTimeout(() => playTone(1600, 'triangle', 0.2, 0.05), 100); }
+  window.playChat = function() { playTone(600, 'sine', 0.1, 0.05); }
+  window.playStart = function() { playTone(400, 'square', 0.1, 0.05); setTimeout(() => playTone(600, 'square', 0.4, 0.05), 150); }
+  window.playOver = function() { playTone(300, 'sawtooth', 0.5, 0.05); setTimeout(() => playTone(200, 'sawtooth', 0.5, 0.05), 200); }
+
 </script>
 @end
