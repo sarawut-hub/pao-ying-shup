@@ -6,7 +6,7 @@
     <title>
       {{ title || 'RPS Royale - Multiplayer Rock Paper Scissors' }}
     </title>
-    <link rel="stylesheet" href="/assets/app-BRxyNEkT.css">
+    @vite(['resources/css/app.css'])
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @stack('dumper')
