@@ -11,7 +11,7 @@ import { beforeSave } from '@adonisjs/lucid/orm'
  */
 export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   @beforeSave()
-  public static async hashPassword(user: User) {
+  public static async hashPassword(user: any) {
     if (user.$dirty.password) {
       user.password = await hash.make(user.password)
     }
