@@ -50,8 +50,9 @@ jobs:
               node ace generate:key
             fi
             sed -i 's/^NODE_ENV=.*/NODE_ENV=production/' .env
+            sed -i 's/^HOST=.*/HOST=0.0.0.0/' .env
             sed -i 's/^PORT=.*/PORT=8888/' .env
-            sed -i 's/^APP_URL=.*/APP_URL=https:\/\/s682int690v007.sit.kmutt.ac.th:8888/' .env
+            sed -i 's/^APP_URL=.*/APP_URL=http:\/\/0.0.0.0:8888/' .env
             
             # 2. ทำการอัปเดต Database (เปลี่ยนจาก fresh ที่ลบข้อมูลทั้งหมด เป็น run เฉยๆ)
             node ace migration:run --force
