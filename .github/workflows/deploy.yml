@@ -1,0 +1,64 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Connect to VPN
+        run: |
+          sudo apt-get update
+
+      - name: Prepare VPN config files
+        run: |
+          echo "${{ secrets.VPN_OVPN }}" | base64 -d > sitst-client.ovpn
+          echo "${{ secrets.VPN_CA_CRT }}" | base64 -d > vpn-st_ca.crt
+          echo -e "${{ secrets.VPN_USER }}\n${{ secrets.VPN_PASS }}" > vpn-auth.txt
+          sudo apt-get install -y openvpn
+          sudo openvpn --config sitst-client.ovpn --auth-user-pass vpn-auth.txt --daemon
+          sleep 10
+
+      - name: SSH pull and build
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASS }}
+          script: |
+            if [ ! -d "rps-royal" ]; then
+              git clone https://github.com/${{ github.repository }}.git rps-royal
+            fi
+            cd rps-royal
+            git fetch origin
+            git reset --hard origin/main
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            echo "Node path: $(which node)"
+            echo "Node version: $(node -v)"
+            npm install
+            
+            # 1. จัดการไฟล์ .env ให้เรียบร้อยก่อน
+            if [ ! -f .env ]; then
+              cp .env.example .env
+              node ace generate:key
+            fi
+            sed -i 's/^NODE_ENV=.*/NODE_ENV=production/' .env
+            sed -i 's/^APP_URL=.*/APP_URL=https:\/\/s682int690v007.sit.kmutt.ac.th:3333/' .env
+            
+            # 2. ทำการอัปเดต Database (เปลี่ยนจาก fresh ที่ลบข้อมูลทั้งหมด เป็น run เฉยๆ)
+            node ace migration:run --force
+            
+            # 3. Build project
+            npm run build
+            cd build
+            cp ../.env .env
+            npm ci --omit="dev"
+            npm install -g pm2
+            pm2 restart rps-royal || pm2 start bin/server.js --name rps-royal

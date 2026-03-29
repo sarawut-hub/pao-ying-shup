@@ -21,5 +21,6 @@ export default defineConfig({
     watch: {
       ignored: ['**/storage/**', '**/tmp/**'],
     },
+    allowedHosts: ['localhost', 's682int690v007.sit.kmutt.ac.th']
   },
 })

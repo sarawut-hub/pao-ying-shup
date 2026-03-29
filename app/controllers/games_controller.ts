@@ -78,10 +78,14 @@ export default class GamesController {
     return view.render('pages/room', { room, isHost, players, isSpectator })
   }
 
-  public async report({ request, view }: HttpContext) {
+  public async report({ request, view, auth }: HttpContext) {
     const page = request.input('page', 1)
     const limit = 20
-    const rooms = await Room.query().where('status', 'finished').orderBy('id', 'desc').paginate(page, limit)
+    const rooms = await Room.query()
+      .where('status', 'finished')
+      .where('hostId', auth.user!.id)
+      .orderBy('id', 'desc')
+      .paginate(page, limit)
     // We will list all rooms and their top players here in the template
     return view.render('pages/report', { rooms })
   }
