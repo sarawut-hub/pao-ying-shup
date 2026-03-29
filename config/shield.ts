@@ -87,7 +87,7 @@ const shieldConfig = defineConfig({
      * Enable HTTP Strict Transport Security.
      * Tells browsers to always use HTTPS for this site.
      */
-    enabled: true,
+    enabled: false,
 
     /**
      * How long browsers should remember to use HTTPS.
