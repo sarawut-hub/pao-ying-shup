@@ -315,8 +315,8 @@ app.ready(() => {
           }
         }
         
-        const top5Raw = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc').limit(5).preload('user')
-        const leaderboard = top5Raw.map(p => ({ 
+        const allPlayersRaw = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc').preload('user')
+        const leaderboard = allPlayersRaw.map(p => ({ 
           score: p.score, 
           userId: p.userId, 
           name: p.user?.fullName || `User #${p.userId}`,

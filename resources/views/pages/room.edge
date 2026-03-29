@@ -229,26 +229,30 @@
   socket.emit('join_room', { roomCode });
 
   let globalPlayersList = [];
+  
+  function updateLeaderboardSidebar(players) {
+    if (!Array.isArray(players)) return;
+    globalPlayersList = players;
+    let html = '';
+    players.forEach(p => {
+      html += `
+        <div class="leaderboard-item">
+          <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+            <img src="${p.avatar}" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border);">
+            <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${p.name}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${p.userId === myUserId ? '<span class="status-badge" style="background: rgba(139,92,246,0.2); color: var(--primary); font-size: 10px;">You</span>' : ''}
+            <div class="rank-badge" style="background: var(--glass-border); min-width: 28px; height: 28px; font-size: 12px;">${p.score}</div>
+          </div>
+        </div>`;
+    });
+    const list = document.getElementById('playersList');
+    if (list) list.innerHTML = html;
+  }
 
   socket.on('player_joined', (players) => {
-    if (Array.isArray(players)) globalPlayersList = players;
-    if ('{{ room.status }}' === 'waiting' && Array.isArray(players)) {
-      let html = '';
-      players.forEach(p => {
-        html += '<div class="leaderboard-item">' +
-          '<div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">' +
-          '<img src="' + p.avatar + '" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border);">' +
-          '<div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">' + p.name + '</div>' +
-          '</div>' +
-          '<div style="display: flex; align-items: center; gap: 10px;">' +
-          (p.userId === myUserId ? '<span class="status-badge" style="background: rgba(139,92,246,0.2); color: var(--primary); font-size: 10px;">You</span>' : '') +
-          '<div class="rank-badge" style="background: var(--glass-border); min-width: 28px; height: 28px; font-size: 12px;">' + p.score + '</div>' +
-          '</div>' +
-          '</div>';
-      });
-      const list = document.getElementById('playersList');
-      if (list) list.innerHTML = html;
-    }
+    updateLeaderboardSidebar(players);
   });
 
   document.getElementById('startGameBtn')?.addEventListener('click', () => {
@@ -439,6 +443,9 @@
       </div>`;
     });
     document.getElementById('roundLeaderboard').innerHTML = html;
+    
+    // Update sidebar leaderboard with new scores
+    updateLeaderboardSidebar(data.leaderboard);
 
     const hostNextBtn = document.getElementById('hostNextActionBtn');
     if (hostNextBtn) hostNextBtn.style.display = 'none';
