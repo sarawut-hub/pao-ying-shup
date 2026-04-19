@@ -4,12 +4,12 @@ import { updateProfileValidator } from '#validators/user'
 export default class ProfilesController {
   
   async show({ view, auth }: HttpContext) {
-    const user = auth.user!
+    const user = await auth.getUserOrFail()
     return view.render('pages/profile', { user })
   }
 
   async update({ request, auth, response, session }: HttpContext) {
-    const user = auth.user!
+    const user = await auth.getUserOrFail()
     const payload = await request.validateUsing(updateProfileValidator)
     
     user.merge(payload)

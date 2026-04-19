@@ -38,9 +38,16 @@ export default class SessionController {
   /**
    * Log in a guest with employee ID
    */
-  async guestLogin({ request, auth, response }: HttpContext) {
+  async guestLogin({ request, auth, response, session }: HttpContext) {
     const employeeId = request.input('employeeId')
     if (!employeeId) return response.redirect().back()
+
+    // Validate employeeId: only allow alphanumeric, max 20 chars
+    const sanitized = String(employeeId).trim()
+    if (!/^[a-zA-Z0-9]{1,20}$/.test(sanitized)) {
+      session.flash('error', 'Invalid Employee ID')
+      return response.redirect().back()
+    }
     
     let user = await User.findBy('email', `${employeeId}@guest.local`)
     if (!user) {

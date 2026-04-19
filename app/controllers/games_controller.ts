@@ -8,7 +8,7 @@ import { randomBytes } from 'crypto'
 export default class GamesController {
   
   public async createRoom({ auth, response }: HttpContext) {
-    const user = auth.user!
+    const user = await auth.getUserOrFail()
     const code = randomBytes(3).toString('hex').toUpperCase()
     
     const room = await Room.create({
@@ -44,7 +44,7 @@ export default class GamesController {
         return response.redirect().toRoute('rooms.show', { code: room.code })
       }
       
-      const user = auth.user!
+      const user = await auth.getUserOrFail()
       const existingPlayer = await RoomPlayer.query().where('roomId', room.id).where('userId', user.id).first()
 
       if (!existingPlayer) {
@@ -66,7 +66,7 @@ export default class GamesController {
     const room = await Room.findBy('code', params.code)
     if (!room) return response.notFound('Room not found')
 
-    const user = auth.user!
+    const user = await auth.getUserOrFail()
     const me = await RoomPlayer.query().where('roomId', room.id).where('userId', user.id).first()
 
     const isSpectator = !me
@@ -79,29 +79,36 @@ export default class GamesController {
   }
 
   public async report({ request, view, auth }: HttpContext) {
+    const user = await auth.getUserOrFail()
     const page = request.input('page', 1)
     const limit = 20
     const rooms = await Room.query()
       .where('status', 'finished')
-      .where('hostId', auth.user!.id)
+      .where('hostId', user.id)
       .orderBy('id', 'desc')
       .paginate(page, limit)
     // We will list all rooms and their top players here in the template
     return view.render('pages/report', { rooms })
   }
 
-  public async roomReport({ params, view, auth }: HttpContext) {
+  public async roomReport({ params, view, auth, response }: HttpContext) {
+    const user = await auth.getUserOrFail()
     const room = await Room.findOrFail(params.id)
+
+    if (room.hostId !== user.id) {
+      return response.forbidden('You are not authorized to view this report')
+    }
+
     const players = await RoomPlayer.query().where('roomId', room.id).orderBy('score', 'desc').preload('user')
-    const isHost = room.hostId === auth.user?.id
-    return view.render('pages/room_report', { room, players, isHost })
+    return view.render('pages/room_report', { room, players, isHost: true })
   }
 
   public async deleteRoom({ params, auth, response, session }: HttpContext) {
     const room = await Room.findBy('code', params.code)
     if (!room) return response.notFound('Room not found')
     
-    if (room.hostId !== auth.user!.id) {
+    const user = await auth.getUserOrFail()
+    if (room.hostId !== user.id) {
       return response.unauthorized('Only the host can delete this room')
     }
 

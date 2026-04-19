@@ -54,6 +54,9 @@ app.ready(() => {
       const room = await Room.findBy('code', data.roomCode)
       if (!room || room.status !== 'waiting') return
 
+      // Only the host can start the game
+      if (room.hostId !== data.userId) return
+
       const players = await RoomPlayer.query().where('roomId', room.id)
       if (players.length < 2) return
 
@@ -101,6 +104,9 @@ app.ready(() => {
 
       const match = await Match.find(matchId)
       if (!match || match.winnerId !== null) return
+
+      // Validate that the userId actually belongs to this match
+      if (match.player1Id !== userId && match.player2Id !== userId) return
 
       if (match.player1Id === userId) match.p1Choice = choice
       else if (match.player2Id === userId) match.p2Choice = choice
@@ -263,6 +269,12 @@ app.ready(() => {
     socket.on('takeover_host', async (data) => {
       const room = await Room.findBy('code', data.roomCode)
       if (!room) return
+
+      // Only allow takeover if the current host is no longer a player in the room
+      if (room.hostId) {
+        const currentHost = await RoomPlayer.query().where('roomId', room.id).where('userId', room.hostId).first()
+        if (currentHost) return // Host is still in the room, cannot takeover
+      }
       
       const rp = await RoomPlayer.query().where('roomId', room.id).where('userId', data.userId).first()
       if (rp) {
