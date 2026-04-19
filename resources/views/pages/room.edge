@@ -256,7 +256,7 @@
   });
 
   document.getElementById('startGameBtn')?.addEventListener('click', () => {
-    socket.emit('start_game', { roomCode });
+    socket.emit('start_game', { roomCode, userId: myUserId });
   });
 
   document.getElementById('hostNextActionBtn')?.addEventListener('click', (e) => {
