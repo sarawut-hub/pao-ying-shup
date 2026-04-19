@@ -2,7 +2,6 @@ import { UserSchema } from '#database/schema'
 import hash from '@adonisjs/core/services/hash'
 import { compose } from '@adonisjs/core/helpers'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
-import { beforeSave } from '@adonisjs/lucid/orm'
 
 /**
  * User model represents a user in the application.
@@ -10,12 +9,6 @@ import { beforeSave } from '@adonisjs/lucid/orm'
  * through the withAuthFinder mixin.
  */
 export default class User extends compose(UserSchema, withAuthFinder(hash)) {
-  @beforeSave()
-  public static async hashPassword(user: any) {
-    if (user.$dirty.password) {
-      user.password = await hash.make(user.password)
-    }
-  }
   /**
    * Get the user's initials from their full name or email.
    * Returns the first letter of first and last name if available,
