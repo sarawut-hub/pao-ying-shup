@@ -4,13 +4,54 @@ import { Server } from 'socket.io'
 import Room from '#models/room'
 import RoomPlayer from '#models/room_player'
 import Match from '#models/match'
+import encryption from '@adonisjs/core/services/encryption'
+import User from '#models/user'
+
+function parseCookies(cookieHeader: string): Record<string, string> {
+  const cookies: Record<string, string> = {}
+  for (const part of cookieHeader.split(';')) {
+    const eqIdx = part.indexOf('=')
+    if (eqIdx === -1) continue
+    const name = part.slice(0, eqIdx).trim()
+    const value = part.slice(eqIdx + 1).trim()
+    if (name) cookies[name] = decodeURIComponent(value)
+  }
+  return cookies
+}
+
+async function resolveSocketUserId(socket: any): Promise<number | null> {
+  try {
+    const cookieHeader = socket.handshake.headers.cookie || ''
+    const cookies = parseCookies(cookieHeader)
+    const sessionCookie = cookies['adonis-session']
+    if (!sessionCookie) return null
+
+    const sessionData = encryption.decrypt<Record<string, any>>(sessionCookie, 'adonis-session')
+    if (!sessionData) return null
+
+    const userId = sessionData['auth_web']
+    if (!userId) return null
+
+    const user = await User.find(userId)
+    return user ? user.id : null
+  } catch {
+    return null
+  }
+}
 
 app.ready(() => {
   const io = new Server(server.getNodeServer(), {
     cors: { origin: '*' }
   })
 
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
+    const userId = await resolveSocketUserId(socket)
+    if (!userId) {
+      socket.disconnect(true)
+      return
+    }
+    socket.data.userId = userId
+
     socket.on('join_room', async (data) => {
       socket.join(data.roomCode)
       try {
@@ -55,7 +96,7 @@ app.ready(() => {
       if (!room || room.status !== 'waiting') return
 
       // Only the host can start the game
-      if (room.hostId !== data.userId) return
+      if (room.hostId !== socket.data.userId) return
 
       const players = await RoomPlayer.query().where('roomId', room.id)
       if (players.length < 2) return
@@ -97,7 +138,8 @@ app.ready(() => {
     })
 
     socket.on('submit_choice', async (data) => {
-      const { matchId, userId, choice } = data
+      const { matchId, choice } = data
+      const userId = socket.data.userId
       
       const validChoices = ['rock', 'paper', 'scissors']
       if (!validChoices.includes(choice)) return
@@ -107,6 +149,10 @@ app.ready(() => {
 
       // Validate that the userId actually belongs to this match
       if (match.player1Id !== userId && match.player2Id !== userId) return
+
+      // Prevent re-submission after draw (winnerId stays null but choices already set)
+      if (match.player1Id === userId && match.p1Choice) return
+      if (match.player2Id === userId && match.p2Choice) return
 
       if (match.player1Id === userId) match.p1Choice = choice
       else if (match.player2Id === userId) match.p2Choice = choice
@@ -161,7 +207,7 @@ app.ready(() => {
     socket.on('host_next_action', async (data) => {
       const room = await Room.findBy('code', data.roomCode)
       // Only host can perform this action, and only when game is actively playing.
-      if (!room || room.hostId !== data.userId || room.status !== 'playing') return
+      if (!room || room.hostId !== socket.data.userId || room.status !== 'playing') return
 
       const matches = await Match.query().where('roomId', room.id).where('roundNumber', room.currentRound)
       const unfinished = matches.filter(m => m.winnerId === null && (m.p1Choice === null || m.p2Choice === null))
@@ -275,17 +321,25 @@ app.ready(() => {
         const currentHost = await RoomPlayer.query().where('roomId', room.id).where('userId', room.hostId).first()
         if (currentHost) return // Host is still in the room, cannot takeover
       }
-      
-      const rp = await RoomPlayer.query().where('roomId', room.id).where('userId', data.userId).first()
+
+      const takingUserId = socket.data.userId
+      const rp = await RoomPlayer.query().where('roomId', room.id).where('userId', takingUserId).first()
       if (rp) {
-        room.hostId = data.userId
+        room.hostId = takingUserId
         await room.save()
-        io.to(room.code).emit('host_transferred', { hostId: data.userId })
+        io.to(room.code).emit('host_transferred', { hostId: takingUserId })
       }
     })
 
     socket.on('chat_message', (data) => {
-      io.to(data.roomCode).emit('chat_message', data)
+      if (!data.roomCode || typeof data.text !== 'string' || typeof data.user !== 'string') return
+      if (data.text.length > 200 || data.user.length > 100) return
+      io.to(data.roomCode).emit('chat_message', {
+        roomCode: data.roomCode,
+        user: data.user,
+        text: data.text,
+        isEmote: !!data.isEmote
+      })
     })
   })
 

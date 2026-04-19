@@ -72,6 +72,7 @@
     "edge.js": "^6.5.0",
     "luxon": "^3.7.2",
     "mysql2": "^3.20.0",
+    "pptxgenjs": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "socket.io": "^4.8.3"
   },
